@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>The Complete Baking & Desserts Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Lato',sans-serif;background:#f5f0eb;color:#222;min-height:100vh}
+  .book-wrap{max-width:900px;margin:0 auto;padding:20px}
+
+  /* COVER */
+  .cover{background:#c0392b;color:#fff;border-radius:12px;padding:60px 40px;text-align:center;margin-bottom:30px;position:relative;overflow:hidden}
+  .cover::before{content:'';position:absolute;top:-60px;right:-60px;width:250px;height:250px;background:rgba(255,255,255,0.07);border-radius:50%}
+  .cover::after{content:'';position:absolute;bottom:-40px;left:-40px;width:180px;height:180px;background:rgba(255,255,255,0.05);border-radius:50%}
+  .cover h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:900;letter-spacing:1px;line-height:1.1}
+  .cover .sub{font-size:1.1rem;margin-top:12px;opacity:0.85;letter-spacing:2px;text-transform:uppercase}
+  .cover .edition{margin-top:30px;font-size:0.85rem;opacity:0.6;border-top:1px solid rgba(255,255,255,0.3);padding-top:16px}
+
+  /* TOC */
+  .toc{background:#fff;border-radius:12px;padding:32px;margin-bottom:30px;border:1px solid #e0d8d0}
+  .toc h2{font-family:'Playfair Display',serif;font-size:1.6rem;color:#c0392b;border-bottom:3px solid #c0392b;padding-bottom:8px;margin-bottom:20px}
+  .toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+  .toc-item{font-size:0.82rem;padding:5px 8px;border-radius:4px;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:6px}
+  .toc-item:hover{background:#fce8e6}
+  .toc-item .num{color:#c0392b;font-weight:700;min-width:24px;font-size:0.78rem}
+  .toc-section{grid-column:1/-1;font-family:'Playfair Display',serif;font-size:0.95rem;font-weight:700;color:#555;margin-top:12px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+
+  /* NAV */
+  .nav-bar{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:8px;padding:12px 20px;margin-bottom:20px;border:1px solid #e0d8d0;gap:10px;flex-wrap:wrap}
+  .nav-btn{background:#c0392b;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:0.85rem;transition:background 0.15s}
+  .nav-btn:hover{background:#a93226}
+  .nav-btn:disabled{background:#ccc;cursor:default}
+  .page-info{font-family:'Playfair Display',serif;font-size:0.95rem;color:#555;text-align:center;flex:1}
+  .page-jump{display:flex;align-items:center;gap:6px;font-size:0.82rem}
+  .page-jump input{width:52px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;text-align:center;font-size:0.85rem}
+
+  /* RECIPE PAGE */
+  .recipe-page{background:#fff;border-radius:12px;border:1px solid #e0d8d0;overflow:hidden;margin-bottom:20px}
+  .recipe-header{background:#c0392b;color:#fff;padding:20px 28px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .recipe-header h2{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900}
+  .recipe-header .meta{display:flex;gap:20px;margin-top:6px;flex-wrap:wrap}
+  .meta-item{text-align:center;background:rgba(255,255,255,0.15);border-radius:6px;padding:6px 14px}
+  .meta-item .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;opacity:0.8}
+  .meta-item .value{font-size:0.9rem;font-weight:700}
+  .page-num-badge{background:rgba(255,255,255,0.2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0}
+
+  .recipe-body{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:0}
+  @media(max-width:620px){.recipe-body{grid-template-columns:1fr}}
+  .recipe-img{background:#f5f0eb;display:flex;align-items:center;justify-content:center;min-height:200px;padding:20px}
+  .recipe-img img{width:100%;max-height:220px;object-fit:cover;border-radius:8px}
+  .recipe-img .placeholder{font-size:4rem;text-align:center}
+
+  .ingredients-col{background:#c0392b;color:#fff;padding:20px 22px}
+  .ingredients-col h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.3);padding-bottom:6px}
+  .ingredients-col ul{list-style:disc;padding-left:16px}
+  .ingredients-col li{font-size:0.82rem;line-height:1.6;margin-bottom:3px}
+
+  .directions-col{padding:20px 22px}
+  .directions-col h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#c0392b;margin-bottom:12px;border-bottom:2px solid #c0392b;padding-bottom:6px}
+  .directions-col ol{padding-left:18px}
+  .directions-col li{font-size:0.82rem;line-height:1.65;margin-bottom:7px}
+
+  .recipe-footer{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #f0e8e0}
+  @media(max-width:500px){.recipe-footer{grid-template-columns:1fr}}
+  .footer-block{padding:16px 22px}
+  .footer-block h4{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:#c0392b;margin-bottom:8px}
+  .footer-block ul{list-style:none;padding:0}
+  .footer-block li{font-size:0.8rem;line-height:1.6;padding-left:12px;position:relative}
+  .footer-block li::before{content:'•';position:absolute;left:0;color:#c0392b}
+  .footer-block.tips{background:#fff8f7}
+  .footer-block.serve{background:#fff}
+  .desc-strip{padding:12px 22px;background:#fdf6f5;font-size:0.83rem;color:#555;border-bottom:1px solid #f0e8e0;font-style:italic}
+  .nutrition-bar{display:flex;gap:20px;padding:10px 22px;background:#f5f0eb;font-size:0.75rem;color:#777;flex-wrap:wrap}
+  .nutrition-bar span{font-weight:700;color:#555}
+
+  /* back to toc */
+  .back-btn{background:none;border:1px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:700;margin-bottom:16px;transition:all 0.15s}
+  .back-btn:hover{background:#c0392b;color:#fff}
+  .showing-toc .recipe-page,.showing-toc .nav-bar,.showing-toc .back-btn{display:none}
+  .showing-recipe .toc,.showing-recipe .cover{display:none}
+</style>
+
+   <!-- DOWNLOAD BUTTONS AND BULK MENU STYLES -->
+   <style>
+   /* DOWNLOAD BUTTONS */
+   .download-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+   .download-btn{background:#27ae60;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:0.75rem;transition:all 0.15s;display:flex;align-items:center;gap:4px}
+   .download-btn:hover{background:#229954}
+   .download-btn.docx{background:#2980b9}
+   .download-btn.docx:hover{background:#1f618d}
+   .bulk-menu-btn{background:#e67e22;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:0.75rem;transition:all 0.15s;display:flex;align-items:center;gap:4px;position:relative}
+   .bulk-menu-btn:hover{background:#ca6f1e}
+   .bulk-menu{position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #ddd;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.12);min-width:220px;z-index:1000;display:none;overflow:hidden}
+   .bulk-menu.active{display:block}
+   .bulk-menu-item{padding:10px 14px;cursor:pointer;font-size:0.8rem;color:#333;border-bottom:1px solid #f0e8e0;transition:background 0.15s}
+   .bulk-menu-item:last-child{border-bottom:none}
+   .bulk-menu-item:hover{background:#f5f0eb}
+   .bulk-menu-item strong{color:#c0392b;display:block;margin-bottom:2px}
+   .bulk-menu-item small{color:#777}
+   .header-actions{display:flex;gap:8px;align-items:center;position:relative}
+   @media(max-width:600px){.download-btns{flex-direction:column;width:100%;gap:6px}.download-btn,.bulk-menu-btn{width:100%;justify-content:center}}
+   </style>
+
+</head>
+<body>
+<div class="book-wrap" id="app">
+  <div id="cover-toc">
+    <div class="cover">
+      <div style="font-size:3rem;margin-bottom:12px">🎂</div>
+      <h1>The Complete<br>Baking & Desserts<br>Book</h1>
+      <div class="sub">A Professional Guide to Cakes, Pastries & Sweet Treats</div>
+      <div class="edition">80 Recipes &nbsp;|&nbsp; Step-by-Step Instructions &nbsp;|&nbsp; Nigerian & International Favourites</div>
+    </div>
+    <div class="toc">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:16px">
+        <h2 style="margin:0;flex-grow:1">Table of Contents</h2>
+        <div class="header-actions">
+          <button class="bulk-menu-btn" id="bulk-btn" onclick="toggleBulkMenu()" title="Download all recipes">📥 Download All</button>
+          <div class="bulk-menu" id="bulk-menu">
+            <div class="bulk-menu-item" onclick="downloadAllPDF()" style="cursor:pointer">
+              <strong>📄 All Recipes as PDF</strong>
+              <small>Single PDF file with all 80 recipes</small>
+            </div>
+            <div class="bulk-menu-item" onclick="downloadAllDOCX()" style="cursor:pointer">
+              <strong>📝 All Recipes as DOCX</strong>
+              <small>Single Word document with all 80 recipes</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="toc-grid" id="toc-grid"></div>
+    </div>
+  </div>
+  <div id="recipe-view" style="display:none">
+    <button class="back-btn" onclick="showToc()">← Back to Contents</button>
+    <div class="nav-bar">
+      <button class="nav-btn" id="prev-btn" onclick="prevPage()">← Previous</button>
+      <div class="page-info" id="page-info"></div>
+      <div class="page-jump">
+        <span style="font-size:0.8rem;color:#888">Go to</span>
+        <input type="number" id="jump-input" min="1" max="80" placeholder="#"/>
+        <button class="nav-btn" onclick="jumpTo()">Go</button>
+      </div>
+      <button class="nav-btn" id="next-btn" onclick="nextPage()">Next →</button>
+    </div>
+    <div class="recipe-page" id="recipe-page"></div>
+  </div>
+</div>
+
+<script>
+const RECIPES = [
+// ─── CAKES ───
+{id:1,emoji:'🍰',title:'Vanilla Sponge Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'35 min',desc:'A light, fluffy classic sponge cake with a delicate vanilla flavour — the foundation of many great cakes. Perfect for layering, decorating, or enjoying plain.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup sugar (200g)','4 large eggs (room temp)','1 cup unsalted butter (225g)','1 tbsp vanilla extract','1 tbsp baking powder','½ tsp salt','½ cup milk (120ml)'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch cake pan.','Beat butter and sugar together for 3–5 minutes until light and fluffy.','Add eggs one at a time, mixing well after each. Stir in vanilla.','Mix flour, baking powder, and salt in a separate bowl.','Add dry ingredients to wet mixture alternating with milk. Mix gently until smooth.','Pour batter into pan. Tap gently to remove air bubbles.','Bake 30–40 min. Test with a toothpick — it should come out clean.','Cool in pan 10–15 min, then transfer to a rack to cool completely.'],
+tips:['Use room-temperature eggs and butter','Don\'t overmix after adding flour','Avoid opening oven in first 20 minutes'],
+serve:['With fresh strawberries and cream','Vanilla ice cream','As a layered birthday cake','With a dusting of icing sugar'],
+cal:320,protein:'5g',fat:'14g',carbs:'45g'},
+
+{id:2,emoji:'🍫',title:'Chocolate Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'35 min',desc:'A rich, moist, and deeply flavoured chocolate cake — perfect for birthdays, celebrations, or any chocolate lover.',
+ingredients:['2 cups all-purpose flour (250g)','1¾ cups sugar (350g)','¾ cup cocoa powder (75g)','2 tsp baking powder','1 tsp baking soda','½ tsp salt','2 large eggs','1 cup milk (240ml)','½ cup vegetable oil (120ml)','1 tbsp vanilla extract','1 cup hot water or hot coffee (240ml)'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch pan.','Combine flour, cocoa, sugar, baking powder, baking soda, and salt. Mix well.','Add eggs, milk, oil, and vanilla. Mix until smooth and lump-free.','Slowly pour in hot water or coffee while stirring. Batter will be thin — this is normal.','Pour batter into pan. Tap lightly to remove air bubbles.','Bake 30–35 min until toothpick comes out clean.','Cool in pan 10 min, then transfer to a rack.'],
+tips:['Use hot coffee to intensify chocolate flavour','Don\'t overbake — check at 30 min','Use room-temperature eggs'],
+serve:['Chocolate ganache','Vanilla ice cream','Fresh strawberries','Chocolate syrup'],
+cal:380,protein:'6g',fat:'16g',carbs:'55g'},
+
+{id:3,emoji:'❤️',title:'Red Velvet Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'35 min',desc:'A soft, moist, and velvety cake with a mild chocolate flavour and stunning red colour, commonly paired with cream cheese frosting.',
+ingredients:['2½ cups all-purpose flour (315g)','1½ cups sugar (300g)','1 tbsp cocoa powder','1 tsp baking soda','½ tsp salt','1 cup buttermilk (240ml)','1 cup vegetable oil (240ml)','2 large eggs','1 tbsp vanilla extract','1 tsp white vinegar','1 tbsp red food colouring'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch pan.','Mix flour, sugar, cocoa, baking soda, and salt in a large bowl.','Whisk buttermilk, oil, eggs, vanilla, vinegar, and red food colouring in another bowl.','Gradually pour wet into dry and mix gently until smooth. Do not overmix.','Pour into pan and smooth the top. Tap lightly to remove air bubbles.','Bake 30–35 min or until toothpick comes out clean.','Cool 10 min in pan, then transfer. Cool completely before frosting.'],
+tips:['Don\'t skip the vinegar — it activates the baking soda','Avoid too much cocoa powder','Use exactly the right amount of food colouring'],
+serve:['Cream cheese frosting','Vanilla ice cream','Fresh strawberries','Hot chocolate or coffee'],
+cal:360,protein:'5g',fat:'17g',carbs:'49g'},
+
+{id:4,emoji:'🥕',title:'Carrot Cake',cat:'Cakes',serves:'8–10',prep:'25 min',cook:'40 min',desc:'A moist, soft, and flavourful cake made with fresh carrots and warm spices — perfect for dessert or afternoon tea.',
+ingredients:['2 cups all-purpose flour (250g)','1½ cups brown sugar (300g)','2 cups grated carrots','1 cup vegetable oil (240ml)','3 large eggs','1 tsp vanilla extract','2 tsp baking powder','1 tsp baking soda','1 tsp cinnamon','½ tsp nutmeg','½ tsp salt'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch pan.','Mix flour, baking powder, baking soda, cinnamon, nutmeg, and salt in a bowl.','Whisk eggs, sugar, oil, and vanilla in another bowl until smooth.','Add grated carrots to the wet mixture and stir.','Fold dry into wet gently until combined. Do not overmix.','Pour into pan, smooth top. Tap lightly.','Bake 35–40 min. Toothpick should come out clean.','Cool 10–15 min, then transfer to a rack.'],
+tips:['Pat carrots dry to remove excess moisture','Don\'t overmix the batter','Check at 35 min to avoid overbaking'],
+serve:['Cream cheese frosting','Chopped walnuts or pecans','Tea or coffee','Caramel sauce'],
+cal:350,protein:'5g',fat:'18g',carbs:'44g'},
+
+{id:5,emoji:'🍌',title:'Banana Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'40 min',desc:'A soft, moist, and rich banana-flavoured cake made with ripe bananas — great for breakfast, dessert, or an afternoon snack.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup sugar (200g)','3 ripe bananas, mashed','½ cup butter or margarine (115g)','2 large eggs','½ cup milk (120ml)','1 tsp vanilla extract','1 tsp baking soda','1 tsp baking powder','½ tsp salt'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch pan.','Mash ripe bananas in a bowl until smooth.','Cream butter and sugar together for 3–4 min until fluffy.','Add eggs one at a time. Stir in vanilla.','Combine flour, baking soda, baking powder, and salt.','Mix mashed bananas into butter mixture.','Alternately fold in dry ingredients and milk. Do not overmix.','Pour into pan. Bake 35–40 min. Toothpick should come out clean.','Cool in pan 10 min, then transfer.'],
+tips:['Use very ripe bananas for best flavour','Avoid overmixing','Make sure centre is fully baked'],
+serve:['Chocolate sauce','Whipped cream','Tea or coffee','Fresh banana slices'],
+cal:310,protein:'5g',fat:'12g',carbs:'48g'},
+
+{id:6,emoji:'🍰',title:'Marble Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'40 min',desc:'A buttery cake combining vanilla and chocolate batters swirled together to create a beautiful marble effect and balanced flavour.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup sugar (200g)','1 cup butter or margarine (225g)','4 large eggs','1 tsp vanilla extract','1 tsp baking powder','½ tsp salt','½ cup milk (120ml)','2 tbsp cocoa powder','2 tbsp hot water'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch pan.','Cream butter and sugar for 3–5 min until light and fluffy.','Add eggs one at a time. Stir in vanilla.','Mix flour, baking powder, and salt in another bowl.','Add dry to wet, alternating with milk. Mix gently until smooth.','Dissolve cocoa in hot water. Mix until smooth paste.','Divide batter into two parts. Mix cocoa paste into one.','Spoon vanilla and chocolate batters alternately into pan.','Swirl with a knife or skewer — do not overmix.','Bake 35–40 min. Cool 10 min before transferring.'],
+tips:['Don\'t overswirl — a few gentle strokes is enough','Cream butter and sugar properly for fluffiness','Avoid opening oven before 30 min'],
+serve:['Chocolate drizzle','Vanilla glaze','Tea or coffee','Ice cream'],
+cal:340,protein:'5g',fat:'16g',carbs:'44g'},
+
+{id:7,emoji:'🧈',title:'Butter Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'40 min',desc:'A dense, rich, and buttery cake with a tender crumb and golden crust. A timeless classic that pairs beautifully with tea or coffee.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup sugar (200g)','1 cup unsalted butter (225g)','4 large eggs','1 tsp vanilla extract','2 tsp baking powder','½ tsp salt','¼ cup milk (60ml)'],
+directions:['Preheat oven to 180°C (350°F). Grease and line a loaf or 8-inch pan.','Cream butter and sugar for 4–5 min until very pale and fluffy.','Add eggs one at a time, beating well after each addition.','Stir in vanilla extract.','Sift flour, baking powder, and salt together.','Fold dry ingredients gently into wet mixture, alternating with milk.','Pour into pan and level the top.','Bake 40–45 min until golden and toothpick comes out clean.','Cool 15 min before removing from pan.'],
+tips:['Use real unsalted butter for best flavour','Cream butter and sugar very well','Don\'t rush the creaming step'],
+serve:['Plain with tea','Icing sugar dusting','Fresh berries','Light jam spread'],
+cal:330,protein:'5g',fat:'17g',carbs:'41g'},
+
+{id:8,emoji:'🎂',title:'Pound Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'55 min',desc:'A dense, moist, and rich cake made with equal weights of butter, sugar, eggs, and flour. Classic, versatile, and deeply satisfying.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup butter (225g)','1 cup sugar (200g)','4 large eggs','1 tsp vanilla extract','1 tsp baking powder','¼ tsp salt','¼ cup milk (60ml)'],
+directions:['Preheat oven to 170°C (340°F). Grease and flour a loaf pan.','Cream butter and sugar until pale and very fluffy — about 5 min.','Add eggs one at a time, mixing well after each.','Stir in vanilla.','Sift flour, baking powder, and salt.','Fold dry into wet, alternating with milk. Mix until just combined.','Pour into loaf pan and smooth the top.','Bake 50–60 min. Cover loosely with foil at 30 min if top browns too fast.','Cool in pan 15 min before turning out.'],
+tips:['Weigh ingredients for accuracy','Room temperature butter is essential','Don\'t overbake — a crack on top is normal'],
+serve:['With whipped cream','Strawberry jam','Fresh fruit salad','Hot tea or coffee'],
+cal:360,protein:'5g',fat:'18g',carbs:'45g'},
+
+{id:9,emoji:'🥥',title:'Coconut Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'40 min',desc:'A soft, moist, and fluffy cake with a rich coconut flavour and light tropical taste. Perfect for celebrations or simple homemade desserts.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup sugar (200g)','1 cup grated coconut (fresh or desiccated)','1 cup butter or margarine (225g)','4 large eggs','1 tsp vanilla extract','2 tsp baking powder','½ tsp salt','½ cup milk (120ml)','½ cup coconut milk (120ml)'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch pan.','Cream butter and sugar for 4–5 min until light, fluffy, and pale.','Add eggs one at a time. Stir in vanilla.','Mix flour, baking powder, and salt in another bowl.','Add dry to wet alternating with milk and coconut milk. Mix gently.','Fold in grated coconut.','Pour into pan. Tap to remove air bubbles.','Bake 35–40 min until toothpick comes out clean.','Cool 10 min, then transfer to a rack.'],
+tips:['Don\'t use too much liquid coconut milk','Fold coconut gently at the end','Preheat oven properly'],
+serve:['Coconut glaze','Whipped cream','Tea or coffee','Fresh coconut flakes on top'],
+cal:370,protein:'5g',fat:'20g',carbs:'44g'},
+
+{id:10,emoji:'🍋',title:'Lemon Drizzle Cake',cat:'Cakes',serves:'8–10',prep:'20 min',cook:'35 min',desc:'A light, soft cake with a fresh citrus flavour, topped with a sweet and tangy lemon syrup that soaks into the cake for extra moisture.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup sugar (200g)','1 cup butter (225g)','4 large eggs','Zest of 2 lemons','½ cup lemon juice (120ml)','1 tsp vanilla extract','2 tsp baking powder','½ tsp salt','½ cup milk (120ml)','½ cup lemon juice + ½ cup sugar (for drizzle)'],
+directions:['Preheat oven to 180°C (350°F). Grease and flour an 8-inch pan.','Cream butter and sugar for 4–5 min until fluffy.','Add eggs one at a time. Stir in vanilla and lemon zest.','Mix flour, baking powder, and salt separately.','Add dry to wet alternating with milk and lemon juice.','Pour into pan and smooth top.','Bake 30–35 min until toothpick comes out clean.','Mix lemon juice and sugar for drizzle.','Poke holes in warm cake. Pour drizzle over immediately.','Cool completely before slicing.'],
+tips:['Add drizzle while cake is still warm','Don\'t overbake — it should stay moist','Mix lemon zest thoroughly into batter'],
+serve:['Tea or coffee','Whipped cream','Fresh berries','Light icing sugar dusting'],
+cal:340,protein:'5g',fat:'15g',carbs:'48g'},
+
+{id:11,emoji:'🍒',title:'Black Forest Cake',cat:'Cakes',serves:'10–12',prep:'30 min',cook:'35 min',desc:'A rich chocolate cake layered with whipped cream and cherries, decorated with chocolate shavings — a classic and elegant celebration dessert.',
+ingredients:['2 cups all-purpose flour (250g)','1¾ cups sugar (350g)','¾ cup cocoa powder (75g)','2 tsp baking powder','1 tsp baking soda','½ tsp salt','2 large eggs','1 cup milk (240ml)','½ cup vegetable oil (120ml)','1 tsp vanilla','1 cup hot water or coffee','2 cups whipped cream','1 cup cherries (fresh or canned)','1 cup chocolate shavings','2 tbsp cherry or sugar syrup'],
+directions:['Preheat oven to 180°C. Grease two 8-inch pans.','Mix flour, cocoa, sugar, baking powder, soda, and salt.','Add eggs, milk, oil, and vanilla. Mix until smooth.','Stir in hot water. Batter will be thin — this is correct.','Divide into two pans. Bake 30–35 min. Cool completely.','Brush one layer with cherry syrup.','Spread whipped cream over that layer. Add cherries.','Place second layer on top. Cover entirely with whipped cream.','Decorate with chocolate shavings and extra cherries.','Refrigerate at least 30 min before serving.'],
+tips:['Assemble only when cake is completely cool','Use thick, stable whipped cream','Don\'t over-soak with syrup'],
+serve:['Hot chocolate','Coffee','Vanilla ice cream','Extra cherries or chocolate sauce'],
+cal:420,protein:'6g',fat:'22g',carbs:'52g'},
+
+{id:12,emoji:'🧀',title:'Baked Cheesecake',cat:'Cakes',serves:'10–12',prep:'30 min',cook:'60 min',desc:'A creamy, rich, and velvety baked cheesecake on a buttery biscuit base. Elegant enough for special occasions yet simple enough for everyday baking.',
+ingredients:['2 cups crushed digestive biscuits (200g)','½ cup butter (115g), melted','3 cups cream cheese (680g)','1 cup sugar (200g)','3 large eggs','1 tsp vanilla extract','½ cup sour cream (120ml)','2 tbsp all-purpose flour','Zest of 1 lemon'],
+directions:['Preheat oven to 160°C (320°F).','Mix crushed biscuits with melted butter. Press firmly into base of a 9-inch springform pan.','Beat cream cheese and sugar until smooth and fluffy.','Add eggs one at a time, mixing on low speed.','Stir in sour cream, flour, vanilla, and lemon zest.','Pour filling over biscuit base. Smooth the top.','Wrap pan base in foil. Place in a larger pan with hot water (water bath).','Bake 55–65 min until set but slightly wobbly in centre.','Turn oven off. Leave cheesecake inside with door ajar for 1 hour.','Refrigerate at least 4 hours or overnight before serving.'],
+tips:['Use room temperature cream cheese','Don\'t skip the water bath — prevents cracking','Cool slowly in oven before refrigerating'],
+serve:['Berry compote','Fresh strawberries','Caramel sauce','Whipped cream'],
+cal:450,protein:'7g',fat:'28g',carbs:'44g'},
+
+{id:13,emoji:'🍰',title:'No-Bake Cheesecake',cat:'Cakes',serves:'8–10',prep:'30 min',cook:'0 min (chill 4hr)',desc:'A creamy and smooth cheesecake that sets in the fridge without any baking — ideal when you need an impressive dessert without turning on the oven.',
+ingredients:['2 cups crushed digestive biscuits','½ cup butter (115g), melted','2 cups cream cheese (450g)','1 cup icing sugar (120g)','1 cup heavy whipping cream (240ml)','1 tsp vanilla extract','Juice of 1 lemon','1 tbsp gelatine powder + 2 tbsp cold water'],
+directions:['Mix biscuit crumbs with melted butter. Press into base of a springform pan.','Dissolve gelatine in cold water, then gently heat until clear. Set aside to cool.','Beat cream cheese, icing sugar, and lemon juice until smooth.','Add vanilla and cooled gelatine. Mix well.','Whip heavy cream separately until stiff peaks form.','Fold whipped cream gently into cream cheese mixture.','Pour over biscuit base. Smooth the top.','Refrigerate for at least 4 hours or overnight until firm.','Slice with a warm knife for clean portions.'],
+tips:['Don\'t let gelatine get too hot before adding','Fold whipped cream gently to keep it airy','Refrigerate overnight for best results'],
+serve:['Strawberry sauce','Fresh berries','Mango coulis','Chocolate shavings'],
+cal:390,protein:'5g',fat:'26g',carbs:'36g'},
+
+{id:14,emoji:'🍓',title:'Strawberry Cake',cat:'Cakes',serves:'8–10',prep:'25 min',cook:'35 min',desc:'A light and fruity cake filled with the fresh sweetness of strawberries — beautiful for birthdays, celebrations, or a cheerful weekend bake.',
+ingredients:['2 cups all-purpose flour (250g)','1 cup sugar (200g)','½ cup butter (115g)','2 large eggs','1 tsp vanilla','2 tsp baking powder','½ tsp salt','½ cup milk (120ml)','1 cup fresh strawberries, chopped','1 tbsp cornflour'],
+directions:['Preheat oven to 180°C. Grease and flour an 8-inch pan.','Toss chopped strawberries in cornflour to coat. Set aside.','Cream butter and sugar for 3–4 min until fluffy.','Add eggs one at a time. Stir in vanilla.','Mix flour, baking powder, and salt separately.','Add dry to wet alternating with milk. Mix gently.','Fold in strawberries gently.','Pour into pan and smooth top.','Bake 35–40 min until toothpick comes out clean.','Cool completely before serving or decorating.'],
+tips:['Coat strawberries in cornflour to prevent sinking','Don\'t overmix after adding berries','Fold gently to keep berries intact'],
+serve:['Whipped cream and fresh strawberries','Vanilla ice cream','Strawberry glaze','Icing sugar dusting'],
+cal:320,protein:'5g',fat:'13g',carbs:'47g'},
+
+{id:15,emoji:'🍋',title:'Lemon Drizzle Loaf',cat:'Cakes',serves:'8',prep:'15 min',cook:'35 min',desc:'A tangy, moist loaf cake bursting with lemon flavour, finished with a glossy lemon sugar glaze that creates a sweet crackled crust.',
+ingredients:['1½ cups all-purpose flour (190g)','¾ cup sugar (150g)','½ cup butter (115g)','2 large eggs','Zest and juice of 2 lemons','1 tsp baking powder','¼ tsp salt','¼ cup milk','½ cup icing sugar (for glaze)','2 tbsp lemon juice (for glaze)'],
+directions:['Preheat oven to 180°C. Line a standard loaf pan.','Cream butter and sugar with lemon zest until fluffy.','Add eggs one at a time. Mix well.','Add flour, baking powder, and salt. Stir in milk and lemon juice alternately.','Pour into pan. Bake 30–35 min.','Mix icing sugar and lemon juice for glaze.','Pour glaze over hot cake immediately out of oven.','Cool in pan until glaze sets.'],
+tips:['Use a generous amount of lemon zest','Apply glaze while cake is hot','Let glaze set completely before cutting'],
+serve:['Afternoon tea','Cream and fresh fruit','Cold with a cup of mint tea'],
+cal:280,protein:'4g',fat:'12g',carbs:'40g'},
+
+// ─── CUPCAKES ───
+{id:16,emoji:'🧁',title:'Vanilla Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'20 min',cook:'20 min',desc:'Soft, fluffy, and perfectly portioned vanilla cupcakes topped with light buttercream — a crowd-pleaser for every occasion.',
+ingredients:['1½ cups all-purpose flour (190g)','¾ cup sugar (150g)','½ cup butter (115g)','2 large eggs','1 tsp vanilla extract','1½ tsp baking powder','¼ tsp salt','½ cup milk (120ml)','1½ cups buttercream frosting (for topping)'],
+directions:['Preheat oven to 180°C. Line a 12-cup muffin tray with cupcake cases.','Cream butter and sugar for 3 min until fluffy.','Add eggs one at a time. Stir in vanilla.','Mix flour, baking powder, and salt.','Add dry to wet alternating with milk. Mix until smooth.','Fill each cupcake case two-thirds full.','Bake 18–22 min until toothpick comes out clean.','Cool completely before frosting.','Pipe or spread buttercream on top.'],
+tips:['Don\'t overfill the cases','Cool completely before frosting','Use piping bag for a professional look'],
+serve:['As is','With sprinkles','For birthday parties','With a cup of tea'],
+cal:260,protein:'3g',fat:'12g',carbs:'36g'},
+
+{id:17,emoji:'🧁',title:'Chocolate Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'20 min',cook:'20 min',desc:'Intensely chocolatey, moist, and tender cupcakes with a rich cocoa base — perfect topped with chocolate ganache or buttercream.',
+ingredients:['1 cup all-purpose flour (125g)','½ cup cocoa powder (50g)','¾ cup sugar (150g)','½ cup butter (115g)','2 large eggs','½ cup milk (120ml)','1 tsp vanilla','1 tsp baking powder','½ tsp baking soda','¼ tsp salt','¼ cup hot water'],
+directions:['Preheat oven to 180°C. Line muffin tray with cases.','Mix flour, cocoa, baking powder, baking soda, and salt.','Beat butter and sugar until fluffy.','Add eggs and vanilla. Mix well.','Add dry and wet ingredients alternately. Stir in hot water.','Fill cases two-thirds full.','Bake 18–22 min. Cool completely.','Top with chocolate buttercream or ganache.'],
+tips:['Hot water intensifies chocolate flavour','Don\'t overbake — they dry out quickly','Cool fully before frosting'],
+serve:['Chocolate ganache','Chocolate sprinkles','For birthday parties','With coffee'],
+cal:280,protein:'4g',fat:'14g',carbs:'38g'},
+
+{id:18,emoji:'🧁',title:'Red Velvet Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'20 min',cook:'20 min',desc:'Bright red, velvety cupcakes with a tender crumb and subtle cocoa flavour — always impressive with cream cheese frosting.',
+ingredients:['1¼ cups all-purpose flour (160g)','¾ cup sugar (150g)','½ cup buttermilk (120ml)','½ cup vegetable oil (120ml)','1 large egg','1 tsp vanilla','1 tbsp cocoa powder','1 tsp baking soda','½ tsp white vinegar','1 tbsp red food colouring','Pinch of salt'],
+directions:['Preheat oven to 180°C. Line muffin tray.','Mix flour, cocoa, baking soda, and salt.','Whisk buttermilk, oil, egg, vanilla, vinegar, and food colouring.','Mix wet into dry until smooth.','Fill cases two-thirds full.','Bake 18–20 min. Cool completely.','Frost with cream cheese icing.'],
+tips:['Don\'t skip the vinegar','Use exactly the right amount of food colouring','Cool fully before adding frosting'],
+serve:['Cream cheese frosting','Red velvet crumbs on top','Valentine\'s Day events','Christmas parties'],
+cal:250,protein:'3g',fat:'12g',carbs:'34g'},
+
+{id:19,emoji:'🧁',title:'Banana Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'15 min',cook:'20 min',desc:'Moist and naturally sweet cupcakes made with ripe bananas — a brilliant way to use overripe bananas.',
+ingredients:['1½ cups all-purpose flour (190g)','¾ cup sugar (150g)','2 ripe bananas, mashed','½ cup butter (115g)','2 large eggs','1 tsp vanilla','1 tsp baking soda','1 tsp baking powder','¼ tsp salt','¼ cup milk'],
+directions:['Preheat oven to 180°C. Line muffin tray.','Cream butter and sugar until fluffy.','Add eggs and vanilla. Mix well.','Stir in mashed bananas.','Mix flour, baking soda, baking powder, and salt.','Fold dry into wet, adding milk as needed.','Fill cases two-thirds full.','Bake 18–22 min. Cool completely before frosting.'],
+tips:['Use very ripe, spotted bananas','Don\'t overmix','Great topped with caramel or peanut butter frosting'],
+serve:['Caramel frosting','Peanut butter icing','Plain','With a drizzle of honey'],
+cal:240,protein:'3g',fat:'11g',carbs:'35g'},
+
+{id:20,emoji:'🧁',title:'Carrot Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'20 min',cook:'20 min',desc:'Warmly spiced cupcakes packed with fresh carrot and topped with classic cream cheese frosting — a favourite for good reason.',
+ingredients:['1½ cups all-purpose flour (190g)','¾ cup sugar (150g)','1 cup grated carrots','½ cup vegetable oil','2 large eggs','1 tsp vanilla','1 tsp cinnamon','½ tsp nutmeg','1 tsp baking powder','½ tsp baking soda','¼ tsp salt'],
+directions:['Preheat oven to 180°C. Line muffin tray.','Whisk oil, eggs, and vanilla.','Add grated carrots. Stir.','Mix flour, sugar, spices, baking powder, soda, and salt.','Fold dry into wet until just combined.','Fill cupcake cases two-thirds full.','Bake 18–22 min. Cool completely.','Frost generously with cream cheese frosting.'],
+tips:['Pat carrots dry before using','Don\'t overmix after combining','Spices can be adjusted to taste'],
+serve:['Cream cheese frosting','Walnut on top','Easter events','With afternoon tea'],
+cal:250,protein:'3g',fat:'13g',carbs:'32g'},
+
+{id:21,emoji:'🧁',title:'Lemon Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'15 min',cook:'20 min',desc:'Bright, zesty lemon cupcakes that are light, refreshing, and perfectly sweet — sunshine in cupcake form.',
+ingredients:['1½ cups all-purpose flour (190g)','¾ cup sugar (150g)','½ cup butter (115g)','2 large eggs','Zest and juice of 2 lemons','1½ tsp baking powder','¼ tsp salt','¼ cup milk','Lemon buttercream for frosting'],
+directions:['Preheat oven to 180°C. Line muffin tray.','Cream butter and sugar with lemon zest until fluffy.','Add eggs. Mix well.','Sift flour, baking powder, and salt.','Add dry to wet alternating with lemon juice and milk.','Fill cases two-thirds full.','Bake 18–20 min. Cool completely.','Pipe with lemon buttercream.'],
+tips:['Fresh lemons give the best flavour','Don\'t skip the zest','Keep them refrigerated if frosted ahead of time'],
+serve:['Lemon buttercream','Lemon curd centre (use a piping tip to fill)','Spring and summer events'],
+cal:250,protein:'3g',fat:'12g',carbs:'34g'},
+
+{id:22,emoji:'🧁',title:'Coconut Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'20 min',cook:'20 min',desc:'Tender, tropical cupcakes with real coconut folded into the batter and finished with fluffy coconut buttercream.',
+ingredients:['1½ cups all-purpose flour (190g)','¾ cup sugar','½ cup butter','2 eggs','1 tsp vanilla','½ cup coconut milk','¼ cup desiccated coconut','1½ tsp baking powder','¼ tsp salt'],
+directions:['Preheat oven to 180°C. Line muffin tray.','Cream butter and sugar. Add eggs and vanilla.','Mix flour, baking powder, salt, and desiccated coconut.','Add dry to wet alternating with coconut milk.','Fill cases two-thirds full.','Bake 18–22 min. Cool completely.','Frost and sprinkle with toasted coconut flakes.'],
+tips:['Toast coconut flakes for extra flavour','Use full-fat coconut milk','Cool completely before frosting'],
+serve:['Coconut buttercream','Toasted coconut flakes on top','Tropical themed parties'],
+cal:260,protein:'3g',fat:'13g',carbs:'34g'},
+
+{id:23,emoji:'🎉',title:'Funfetti Cupcakes',cat:'Cupcakes',serves:'12 cupcakes',prep:'20 min',cook:'20 min',desc:'Cheerful, colourful vanilla cupcakes packed with rainbow sprinkles inside and out — guaranteed to make anyone smile.',
+ingredients:['1½ cups all-purpose flour (190g)','¾ cup sugar','½ cup butter','2 large eggs','1 tsp vanilla','½ cup milk','1½ tsp baking powder','¼ tsp salt','½ cup rainbow sprinkles (not nonpareils)'],
+directions:['Preheat oven to 180°C. Line muffin tray.','Cream butter and sugar until fluffy.','Add eggs one at a time. Stir in vanilla.','Mix flour, baking powder, and salt.','Add dry to wet alternating with milk.','Fold in sprinkles at the end gently.','Fill cases two-thirds full.','Bake 18–22 min. Cool completely.','Frost and add more sprinkles on top.'],
+tips:['Use rod sprinkles not nonpareils to prevent bleeding','Fold sprinkles in last and gently','Great for kids\' parties'],
+serve:['Vanilla buttercream','Extra sprinkles on top','Birthday parties','School events'],
+cal:255,protein:'3g',fat:'12g',carbs:'36g'},
+
+// ─── DOUGH-BASED ───
+{id:24,emoji:'🍩',title:'Classic Doughnuts',cat:'Dough Treats',serves:'12 doughnuts',prep:'90 min',cook:'20 min',desc:'Soft, pillowy, and golden doughnuts fried to perfection — the kind you find in a good bakery. Worth every minute of effort.',
+ingredients:['3 cups all-purpose flour (375g)','¼ cup sugar (50g)','2¼ tsp instant yeast','½ tsp salt','½ cup warm milk (120ml)','¼ cup warm water (60ml)','2 large eggs','¼ cup butter (55g), softened','1 tsp vanilla','Oil for frying','Icing sugar or glaze for finishing'],
+directions:['Mix warm milk, water, and yeast. Let stand 10 min until foamy.','Add sugar, eggs, vanilla, and butter. Mix well.','Add flour and salt. Knead for 8–10 min until smooth and elastic.','Cover and let rise in a warm place for 1–1½ hours until doubled.','Punch down dough. Roll to 1cm thickness.','Cut with a doughnut cutter. Let rest 20 min.','Heat oil to 175°C (350°F). Fry doughnuts 1–2 min per side until golden.','Drain on paper towels. Glaze or dust with icing sugar while warm.'],
+tips:['Don\'t let oil get too hot — test with a small piece','Don\'t overcrowd the pan','Let dough rise fully for soft results'],
+serve:['Classic glaze','Chocolate dip','Icing sugar','Cinnamon sugar'],
+cal:280,protein:'5g',fat:'12g',carbs:'40g'},
+
+{id:25,emoji:'🍩',title:'Glazed Doughnuts',cat:'Dough Treats',serves:'12',prep:'90 min',cook:'20 min',desc:'Light, airy yeast doughnuts coated in a shiny vanilla glaze that sets into a crisp, sweet shell. A true bakery classic.',
+ingredients:['3 cups flour','¼ cup sugar','2¼ tsp yeast','½ tsp salt','½ cup warm milk','¼ cup warm water','2 eggs','¼ cup butter','1 tsp vanilla','Oil for frying','Glaze: 2 cups icing sugar + 4–5 tbsp milk + 1 tsp vanilla'],
+directions:['Follow Classic Doughnut recipe steps 1–7.','While doughnuts cool slightly, whisk icing sugar, milk, and vanilla until smooth.','Dip warm doughnuts face-down into glaze. Lift and let excess drip.','Place on a rack to set for 10 min.','Glaze again for a thicker coating if desired.'],
+tips:['Glaze while doughnuts are still warm','Thin glaze slightly if too thick','Let glaze set on a wire rack not paper towel'],
+serve:['As a classic treat','With coffee or tea','For breakfast','Decorated with sprinkles'],
+cal:290,protein:'5g',fat:'12g',carbs:'44g'},
+
+{id:26,emoji:'🍩',title:'Jam-Filled Doughnuts',cat:'Dough Treats',serves:'12',prep:'90 min',cook:'20 min',desc:'Soft, pillowy doughnuts filled with a burst of fruity jam and rolled in caster sugar — a bakery favourite that\'s deeply satisfying.',
+ingredients:['3 cups flour','¼ cup sugar','2¼ tsp yeast','½ tsp salt','½ cup warm milk','¼ cup warm water','2 eggs','¼ cup butter','1 tsp vanilla','Oil for frying','Strawberry or raspberry jam for filling','Caster sugar for rolling'],
+directions:['Follow Classic Doughnut dough recipe.','After first rise, shape into balls (no hole needed).','Let rest 20–30 min. Fry in oil 175°C until golden on both sides.','Drain and cool slightly.','Use a piping bag with a thin nozzle to inject jam into centre.','Roll immediately in caster sugar.'],
+tips:['Don\'t overfill with jam','Use a piping tip for neat filling','Roll in sugar while still slightly warm'],
+serve:['Warm as a snack','With tea or coffee','At birthday parties','As a festive treat'],
+cal:285,protein:'5g',fat:'12g',carbs:'42g'},
+
+{id:27,emoji:'🍡',title:'Puff Puff',cat:'Dough Treats',serves:'25–30 pieces',prep:'60 min',cook:'20 min',desc:'Nigeria\'s most beloved street snack — soft, sweet, and perfectly round deep-fried dough balls that are irresistibly addictive.',
+ingredients:['2 cups all-purpose flour (250g)','¼ cup sugar','1 tsp instant yeast','¼ tsp salt','¾ cup warm water (180ml)','½ tsp nutmeg (optional)','Oil for frying'],
+directions:['Mix flour, sugar, yeast, salt, and nutmeg together.','Add warm water gradually. Mix until you get a smooth, thick batter (not dry dough).','Cover with a clean cloth and let rise for 45–60 min until doubled.','Heat oil in a deep pot to 175°C (medium heat).','Using a spoon or your hand, scoop small balls of batter into oil.','Fry in batches, turning gently, for 3–4 min until golden brown all over.','Remove and drain on paper towels.'],
+tips:['Batter should be sticky, not dry','Keep oil at consistent temperature','Don\'t rush the rising time'],
+serve:['Plain as a snack','With pepper sauce','At parties and celebrations','Dusted with icing sugar'],
+cal:90,protein:'2g',fat:'4g',carbs:'13g'},
+
+{id:28,emoji:'🍞',title:'Nigerian Buns',cat:'Dough Treats',serves:'20–25 pieces',prep:'15 min',cook:'20 min',desc:'A Nigerian street food favourite — crunchy on the outside, soft inside, slightly sweet, and fried to a deep golden colour. Different from puff puff in texture.',
+ingredients:['2 cups all-purpose flour (250g)','3 tbsp sugar','1 tsp baking powder','¼ tsp salt','2 eggs','¼ cup butter or margarine, melted','½ cup milk or water (approximately)','½ tsp nutmeg','Oil for frying'],
+directions:['Mix flour, sugar, baking powder, salt, and nutmeg.','Add melted butter and eggs. Mix well.','Add milk gradually, mixing until a firm dough forms (firmer than puff puff batter).','Shape into balls or any desired shape.','Heat oil to 170°C. Fry on medium heat for 4–6 min, turning once.','They should be dark golden brown all over.','Drain on paper towels.'],
+tips:['Dough should be firm enough to shape','Fry on medium heat — too high burns outside while inside stays raw','Different from puff puff — buns are denser'],
+serve:['With cold drinks','At birthday parties','As a snack','With pepper sauce'],
+cal:120,protein:'3g',fat:'6g',carbs:'15g'},
+
+{id:29,emoji:'🌀',title:'Cinnamon Rolls',cat:'Dough Treats',serves:'12 rolls',prep:'120 min',cook:'25 min',desc:'Soft, pillowy rolls swirled with cinnamon sugar and finished with a luscious cream cheese glaze — pure comfort baking.',
+ingredients:['3 cups all-purpose flour (375g)','¼ cup sugar','2¼ tsp instant yeast','½ tsp salt','¾ cup warm milk (180ml)','¼ cup butter (55g), melted','2 eggs','Filling: ½ cup butter, ¾ cup brown sugar, 2 tbsp cinnamon','Glaze: 1 cup icing sugar, 2 tbsp cream cheese, 2–3 tbsp milk'],
+directions:['Combine yeast and warm milk. Let sit 10 min.','Add sugar, eggs, and butter. Mix well.','Add flour and salt. Knead 8 min until smooth.','Cover and rise 1–1½ hours until doubled.','Roll dough into a 30x40cm rectangle.','Spread softened butter over surface.','Mix brown sugar and cinnamon. Sprinkle over butter.','Roll tightly from the long end. Cut into 12 slices.','Place in greased pan. Rise again 30 min.','Bake at 180°C for 22–26 min until golden.','Drizzle with glaze.'],
+tips:['Don\'t rush either rising time','Roll dough tightly for defined swirls','Glaze while rolls are still warm'],
+serve:['Warm for breakfast','With cream cheese frosting','As a Sunday morning treat'],
+cal:340,protein:'6g',fat:'14g',carbs:'49g'},
+
+{id:30,emoji:'🥨',title:'Soft Pretzels',cat:'Dough Treats',serves:'8 pretzels',prep:'90 min',cook:'15 min',desc:'Chewy on the outside, soft on the inside, with that distinctive pretzel flavour from a baking soda bath. Sprinkled with sea salt for the finishing touch.',
+ingredients:['2¼ cups all-purpose flour (280g)','1 tsp sugar','1 tsp salt','2¼ tsp instant yeast','¾ cup warm water (180ml)','1 tbsp butter, melted','Baking soda bath: 2 litres water + ½ cup baking soda','Coarse sea salt for topping','1 egg yolk + 1 tbsp water (egg wash)'],
+directions:['Mix yeast and warm water. Let stand 5 min.','Add sugar, salt, butter, and flour. Knead 8 min until smooth.','Cover and rise 1 hour.','Divide into 8 pieces. Roll each into a 60cm rope.','Shape into a pretzel and place on lined baking sheet.','Boil baking soda bath. Dip each pretzel for 30 seconds.','Return to sheet. Brush with egg wash. Sprinkle salt.','Bake at 220°C (430°F) for 12–15 min until deep brown.'],
+tips:['The baking soda bath is essential for pretzel flavour','Don\'t skip the egg wash','Bake at high temperature for the right crust'],
+serve:['With honey mustard dip','Cheese sauce','Warm from the oven','As a party snack'],
+cal:220,protein:'7g',fat:'4g',carbs:'40g'},
+
+// ─── PASTRIES ───
+{id:31,emoji:'🥐',title:'Croissants',cat:'Pastries',serves:'12 croissants',prep:'360 min',cook:'20 min',desc:'Buttery, flaky, and light laminated pastry with hundreds of delicate layers. A project worth taking on — the results are unforgettable.',
+ingredients:['3 cups flour (375g)','¼ cup sugar','2¼ tsp yeast','1 tsp salt','1 cup warm milk (240ml)','1 tbsp butter, melted','250g cold unsalted butter (for lamination)','1 egg (for egg wash)'],
+directions:['Make dough: mix yeast, milk, sugar, salt, and melted butter. Add flour. Knead 5 min. Chill overnight.','Beat cold butter into a flat 15cm square. Chill.','Roll dough into a rectangle. Place butter in centre and fold dough over it.','Roll out and fold into thirds. Chill 30 min. Repeat 3 times.','Roll final dough thin. Cut into triangles.','Roll each triangle from base to tip. Curve into crescent.','Rise 2–3 hours until puffy. Brush with egg wash.','Bake 200°C for 18–22 min until deep golden brown.'],
+tips:['Keep butter cold at all times','Don\'t rush lamination — rest between folds','Bake at high heat for flakiness'],
+serve:['Warm with butter and jam','With coffee or hot chocolate','Plain for breakfast'],
+cal:340,protein:'7g',fat:'19g',carbs:'36g'},
+
+{id:32,emoji:'🍫',title:'Chocolate Croissants',cat:'Pastries',serves:'12',prep:'360 min',cook:'20 min',desc:'Pain au chocolat — classic croissant dough wrapped around a dark chocolate bar. One of the greatest pastries ever created.',
+ingredients:['Croissant dough (see page 31)','150g good dark chocolate, broken into pieces or chocolate batons'],
+directions:['Make croissant dough following the full lamination process.','Roll dough thin (3mm). Cut into rectangles (8cm x 12cm).','Place 2–3 pieces of chocolate at the base of each rectangle.','Roll up from base to top. Seal the edge underneath.','Place on lined baking sheet. Rise 2 hours.','Brush with egg wash.','Bake at 200°C for 18–22 min until deeply golden.'],
+tips:['Use high-quality dark chocolate','Don\'t use too much chocolate or it leaks','Fully rise before baking'],
+serve:['Warm from the oven','With café au lait','As a weekend treat'],
+cal:370,protein:'7g',fat:'22g',carbs:'38g'},
+
+{id:33,emoji:'🥐',title:'Danish Pastries',cat:'Pastries',serves:'12',prep:'300 min',cook:'20 min',desc:'Buttery, layered pastries from Scandinavia — shaped into twists, pinwheels, or envelopes and filled with cream cheese, jam, or custard.',
+ingredients:['3 cups flour (375g)','¼ cup sugar','2¼ tsp yeast','1 tsp salt','1 cup warm milk','2 eggs','250g cold butter (for lamination)','Filling: cream cheese + sugar + lemon, or jam, or pastry cream'],
+directions:['Make enriched yeast dough. Chill overnight.','Laminate with cold butter (3 folds, chilling between each).','Roll dough thin. Cut and shape as desired.','Add filling in the centre or fold into shape.','Rise 1–2 hours. Brush with egg wash.','Bake at 200°C for 16–20 min until golden.','Drizzle with icing glaze while warm.'],
+tips:['Shape options: pinwheel, envelope, braid','Keep dough and butter cold','Glaze while still warm'],
+serve:['With morning coffee','At brunch','As a special breakfast'],
+cal:320,protein:'6g',fat:'17g',carbs:'38g'},
+
+{id:34,emoji:'🥧',title:'Puff Pastry',cat:'Pastries',serves:'Approx. 500g dough',prep:'180 min',cook:'Varies',desc:'The base of many great pastries — a buttery, laminated dough that puffs dramatically in the oven into hundreds of crisp, flaky layers.',
+ingredients:['2 cups all-purpose flour (250g)','½ tsp salt','½ cup cold water (120ml)','200g cold unsalted butter'],
+directions:['Mix flour, salt, and water to form a rough dough. Do not overknead. Chill 30 min.','Beat butter into a flat square (15x15cm). Chill.','Roll dough into rectangle, place butter in centre, fold dough over.','Roll and fold in thirds. Chill 30 min. Repeat 6 times.','Use as required for pies, pastry cases, or vol-au-vents.','Bake at 200–220°C.'],
+tips:['Keep everything cold','6 folds = maximum layers','Use for both sweet and savoury applications'],
+serve:['As a pie crust','For vol-au-vents','Wrapped around sausages','As tart shells'],
+cal:380,protein:'5g',fat:'24g',carbs:'36g'},
+
+{id:35,emoji:'🥧',title:'Meat Pie',cat:'Pastries',serves:'10–12 pieces',prep:'45 min',cook:'30 min',desc:'Nigeria\'s most iconic baked pastry — a shortcrust pastry shell filled with a savoury, well-seasoned minced meat and vegetable filling. A staple at every celebration.',
+ingredients:['3 cups flour (375g)','150g cold butter or margarine','1 tsp salt','Cold water to bind','Filling: 400g minced beef, 2 potatoes (diced), 1 carrot (diced), 1 onion, 1 stock cube, salt, pepper, curry powder, 2 tbsp flour to thicken'],
+directions:['Make shortcrust pastry: rub cold butter into flour and salt until breadcrumb texture. Add cold water. Bring together. Chill 30 min.','Cook filling: sauté onion in oil. Add minced beef. Brown well.','Add potato, carrot, stock cube, curry, salt, and pepper. Cook 10 min.','Dissolve flour in small water. Add to filling to thicken. Cool completely.','Roll pastry thin. Cut circles using a bowl.','Place filling on one side. Fold over. Seal edges with fork.','Brush with egg wash.','Bake at 180°C for 25–30 min until golden.'],
+tips:['Filling must be completely cool before use','Don\'t overfill or it will burst open','Seal edges firmly with fork'],
+serve:['Warm at parties','With cold drinks','As a snack','At any celebration'],
+cal:280,protein:'10g',fat:'14g',carbs:'30g'},
+
+{id:36,emoji:'🍗',title:'Chicken Pie',cat:'Pastries',serves:'10–12 pieces',prep:'45 min',cook:'30 min',desc:'A flavourful variation of the classic meat pie — filled with seasoned chicken, vegetables, and herbs, all encased in flaky shortcrust pastry.',
+ingredients:['Shortcrust pastry (see Meat Pie, page 35)','300g cooked chicken, shredded','1 carrot, diced','1 potato, diced','1 onion, chopped','1 stock cube','Salt, pepper, curry powder, thyme','2 tbsp flour + water (to thicken)','Oil for frying'],
+directions:['Make shortcrust pastry dough. Chill.','Sauté onion and vegetables in oil until soft.','Add shredded chicken, stock cube, and spices. Stir well.','Add flour-water mixture. Cook until thick. Cool completely.','Roll pastry, cut circles, fill, fold, and seal.','Brush with egg wash.','Bake at 180°C for 25–30 min.'],
+tips:['Use cooked chicken for easier handling','Season filling well — it should be delicious on its own','Cool filling completely before adding to pastry'],
+serve:['At events and parties','As a school snack','With soft drinks','For lunch boxes'],
+cal:265,protein:'12g',fat:'13g',carbs:'28g'},
+
+{id:37,emoji:'🌭',title:'Sausage Rolls',cat:'Pastries',serves:'12–15 pieces',prep:'30 min',cook:'25 min',desc:'Pork or beef sausage wrapped in flaky, buttery puff pastry and baked until golden and crisp. A perennial favourite at parties and gatherings.',
+ingredients:['Puff pastry (homemade page 34 or ready-made)','400g sausage meat or minced beef','1 onion, finely grated','1 tsp thyme','Salt and pepper','1 stock cube','Egg wash (1 egg + 1 tbsp water)'],
+directions:['Mix sausage meat with grated onion, thyme, salt, pepper, and stock cube.','Roll pastry into a long rectangle (3mm thick).','Place sausage filling in a log shape along the long edge.','Roll pastry tightly around filling. Seal the edge.','Cut into individual rolls (5–7cm).','Place on baking sheet. Brush with egg wash.','Score tops lightly with a knife.','Bake at 200°C for 22–26 min until golden and puffed.'],
+tips:['Season filling generously','Seal seam side down on baking sheet','Bake at high heat for flaky pastry'],
+serve:['Warm at parties','With tomato ketchup','As a snack','At buffets and events'],
+cal:240,protein:'9g',fat:'15g',carbs:'20g'},
+
+{id:38,emoji:'🍎',title:'Apple Turnover',cat:'Pastries',serves:'8',prep:'30 min',cook:'25 min',desc:'A handheld pastry filled with sweet, cinnamon-spiced apple filling and folded into a flaky triangle. Homey, delicious, and very satisfying.',
+ingredients:['Puff pastry (see page 34) or ready-made','3 medium apples, peeled and diced','3 tbsp sugar','1 tsp cinnamon','1 tbsp butter','1 tbsp cornflour','Egg wash'],
+directions:['Cook apples with butter, sugar, and cinnamon over medium heat for 5 min.','Add cornflour dissolved in a little water. Stir until thickened. Cool.','Roll pastry and cut into 15cm squares.','Place filling in the centre of each square.','Fold diagonally to make a triangle. Press and seal edges with a fork.','Brush with egg wash. Score the top.','Bake at 200°C for 20–25 min until puffed and golden.'],
+tips:['Cool filling before using','Don\'t overfill','Seal edges firmly to prevent leaking'],
+serve:['Warm with vanilla ice cream','Custard drizzle','Dusted with icing sugar','With cream'],
+cal:290,protein:'4g',fat:'15g',carbs:'36g'},
+
+{id:39,emoji:'🥩',title:'Beef Pie',cat:'Pastries',serves:'6–8 (large)',prep:'45 min',cook:'45 min',desc:'A hearty, deeply flavoured beef pie with rich, slow-cooked filling in a golden shortcrust pastry shell. Comfort food at its finest.',
+ingredients:['Shortcrust pastry (double quantity, page 35)','500g beef, cubed','1 onion, chopped','2 carrots, diced','2 potatoes, diced','2 tbsp tomato paste','1 cup beef stock (240ml)','2 tbsp flour','Salt, pepper, thyme, bay leaf','Oil for frying'],
+directions:['Brown beef in oil. Set aside.','Sauté onion. Add carrots, potatoes, and tomato paste.','Return beef. Add stock, thyme, bay leaf, salt, and pepper.','Simmer 30–40 min until beef is tender and gravy thickens.','Remove bay leaf. Cool completely.','Line a pie dish with pastry. Pour in filling.','Cover with pastry lid. Seal and crimp edges. Vent top.','Bake at 200°C for 35–40 min until golden.'],
+tips:['Cook filling until very tender before baking','Vent the top to prevent a soggy lid','Rest pie 10 min before cutting'],
+serve:['With mashed potato','Steamed vegetables','As a hearty main dish','With gravy'],
+cal:420,protein:'22g',fat:'20g',carbs:'42g'},
+
+{id:40,emoji:'🐟',title:'Fish Pie Puffs',cat:'Pastries',serves:'10–12',prep:'40 min',cook:'25 min',desc:'Flaky puff pastry filled with a lightly spiced, savoury fish and vegetable filling — a light and delicious handheld snack.',
+ingredients:['Puff pastry (page 34) or ready-made','300g cooked fish, flaked (tilapia, tuna, or mackerel)','1 onion, finely chopped','1 tomato, chopped','1 green chilli (optional)','Salt, pepper, and thyme','1 tbsp oil','Egg wash'],
+directions:['Sauté onion in oil until soft. Add tomato and chilli.','Add fish and seasonings. Stir gently. Cook 3 min. Cool.','Roll pastry and cut into circles or rectangles.','Place filling on half. Fold and seal with fork.','Brush with egg wash.','Bake at 200°C for 20–22 min until golden.'],
+tips:['Remove all bones from fish','Don\'t add too much liquid to filling','Season generously'],
+serve:['With chilli sauce','As a snack','At parties','With cold juice'],
+cal:220,protein:'10g',fat:'12g',carbs:'21g'},
+
+// ─── COOKIES ───
+{id:41,emoji:'🍪',title:'Chocolate Chip Cookies',cat:'Cookies',serves:'24 cookies',prep:'15 min',cook:'12 min',desc:'The ultimate cookie — golden, crisp at the edges, soft and chewy in the middle, loaded with pools of melted chocolate.',
+ingredients:['2¼ cups all-purpose flour (280g)','1 tsp baking soda','1 tsp salt','1 cup butter (225g), softened','¾ cup granulated sugar (150g)','¾ cup packed brown sugar (150g)','2 large eggs','2 tsp vanilla','2 cups chocolate chips (340g)'],
+directions:['Preheat oven to 190°C (375°F). Line baking sheets.','Beat butter and both sugars until light and fluffy.','Add eggs one at a time. Stir in vanilla.','Mix flour, baking soda, and salt. Add to butter mixture.','Stir in chocolate chips.','Drop tablespoon-sized balls onto baking sheet, spacing 5cm apart.','Bake 9–12 min until edges are golden but centre looks soft.','Cool on sheet 5 min — they firm up as they cool.'],
+tips:['Don\'t overbake — they continue cooking on the hot sheet','Brown sugar makes them chewier','Chill dough 30 min for thicker cookies'],
+serve:['Warm with milk','Ice cream sandwiches','Packed for school lunches','As a gift'],
+cal:180,protein:'2g',fat:'9g',carbs:'24g'},
+
+{id:42,emoji:'🍪',title:'Sugar Cookies',cat:'Cookies',serves:'24–30 cookies',prep:'20 min',cook:'12 min',desc:'Classic, buttery, crisp-edged sugar cookies that are perfect for cutting into shapes and decorating with icing — a festive baking essential.',
+ingredients:['2¾ cups flour (345g)','1 tsp baking soda','½ tsp baking powder','½ tsp salt','1 cup butter (225g)','1½ cups sugar (300g)','1 egg','1½ tsp vanilla','Coloured icing sugar (for decorating)'],
+directions:['Cream butter and sugar until fluffy.','Add egg and vanilla. Mix well.','Sift flour, baking soda, baking powder, and salt. Mix in.','Chill dough 1 hour.','Preheat oven to 190°C. Roll dough to 5mm thick.','Cut into shapes with cookie cutters.','Place on lined sheet. Bake 8–10 min.','Cool completely before decorating with icing.'],
+tips:['Chill dough before cutting for clean shapes','Don\'t overbake — they should stay pale','Decorate when fully cool'],
+serve:['At Christmas and celebrations','Decorated for parties','As a gift in a tin','Plain with tea'],
+cal:160,protein:'2g',fat:'7g',carbs:'23g'},
+
+{id:43,emoji:'🥜',title:'Peanut Butter Cookies',cat:'Cookies',serves:'24 cookies',prep:'15 min',cook:'12 min',desc:'Rich, nutty, and intensely flavourful peanut butter cookies with the classic fork-pressed criss-cross pattern. Simple ingredients, outstanding results.',
+ingredients:['1 cup peanut butter (smooth or crunchy)','1 cup sugar (200g)','1 large egg','1 tsp vanilla','1 tsp baking soda','Pinch of salt'],
+directions:['Preheat oven to 180°C. Line baking sheet.','Mix all ingredients together into a dough.','Roll into balls (approx 2 tablespoons each).','Place on baking sheet. Press with a fork in a criss-cross pattern.','Bake 10–12 min until set.','Cool completely on sheet before removing.'],
+tips:['This recipe is naturally gluten-free','Don\'t underbake — they look soft but firm up when cooled','Use natural or regular peanut butter'],
+serve:['With cold milk','As a quick snack','In lunchboxes','With chocolate dipped base'],
+cal:140,protein:'4g',fat:'8g',carbs:'15g'},
+
+{id:44,emoji:'🌾',title:'Oatmeal Cookies',cat:'Cookies',serves:'24 cookies',prep:'15 min',cook:'12 min',desc:'Hearty, chewy cookies packed with oats, brown sugar, and warm spices. Wholesome enough for breakfast, delicious enough for dessert.',
+ingredients:['1½ cups flour (190g)','1 cup rolled oats','¾ cup butter (170g)','¾ cup brown sugar (150g)','¼ cup white sugar','1 egg','1 tsp vanilla','1 tsp cinnamon','1 tsp baking soda','½ tsp salt','Optional: raisins or chocolate chips'],
+directions:['Cream butter and sugars until fluffy.','Add egg and vanilla.','Mix flour, oats, cinnamon, baking soda, and salt.','Combine wet and dry. Stir in raisins or chips if using.','Chill 30 min.','Preheat oven to 180°C. Drop spoonfuls onto baking sheet.','Bake 10–12 min until golden edges but soft centre.','Cool on sheet 5 min.'],
+tips:['Use rolled oats not instant oats','Don\'t overbake','Raisins or chocolate chips are both great add-ins'],
+serve:['With tea or milk','As a breakfast cookie','In a lunchbox','As an afternoon snack'],
+cal:160,protein:'3g',fat:'8g',carbs:'22g'},
+
+{id:45,emoji:'🍪',title:'Shortbread Biscuits',cat:'Cookies',serves:'24 biscuits',prep:'15 min',cook:'15 min',desc:'Pure, buttery, melt-in-the-mouth Scottish shortbread made with just three ingredients. A masterclass in simplicity.',
+ingredients:['2 cups all-purpose flour (250g)','¾ cup butter (170g), softened','¼ cup icing sugar (30g)','Pinch of salt'],
+directions:['Beat butter until soft and fluffy.','Sift in icing sugar. Mix.','Add flour and salt. Mix until dough just comes together.','Wrap and chill 30 min.','Preheat oven to 160°C. Roll to 5mm thick.','Cut into rectangles or fingers. Prick with a fork.','Bake 12–15 min until pale golden.','Cool completely on wire rack.'],
+tips:['Don\'t overbake — shortbread should stay very pale','Use real butter for authentic flavour','Handle dough gently'],
+serve:['With tea or coffee','As a gift in a tin','With clotted cream and jam','Plain as an elegant biscuit'],
+cal:140,protein:'2g',fat:'8g',carbs:'16g'},
+
+{id:46,emoji:'🎄',title:'Gingerbread Cookies',cat:'Cookies',serves:'30 cookies',prep:'60 min',cook:'12 min',desc:'Warmly spiced, crisp-edged gingerbread cookies in any shape you like — a Christmas tradition and a wonderful decorating project.',
+ingredients:['3 cups flour (375g)','¾ cup butter (170g)','¾ cup brown sugar (150g)','1 egg','½ cup molasses or golden syrup','1 tsp baking soda','1 tsp ginger powder','1 tsp cinnamon','½ tsp cloves','¼ tsp salt'],
+directions:['Beat butter and sugar. Add egg and molasses.','Mix flour, spices, baking soda, and salt. Stir in.','Wrap dough. Chill 2 hours.','Preheat oven to 180°C. Roll to 4mm thick.','Cut into shapes. Bake 10–12 min.','Cool. Decorate with royal icing.'],
+tips:['Chill dough thoroughly for clean shapes','Bake until just set — they firm as they cool','Store in an airtight tin'],
+serve:['Decorated as Christmas gifts','At holiday parties','As tree decorations','With hot chocolate'],
+cal:130,protein:'2g',fat:'6g',carbs:'19g'},
+
+{id:47,emoji:'🍫',title:'Double Chocolate Cookies',cat:'Cookies',serves:'24 cookies',prep:'15 min',cook:'12 min',desc:'Intensely chocolatey cookies with cocoa in the dough AND chocolate chips throughout — for the serious chocolate lover.',
+ingredients:['1¾ cups flour (220g)','½ cup cocoa powder (50g)','1 cup butter (225g)','¾ cup sugar (150g)','¾ cup brown sugar (150g)','2 eggs','1 tsp vanilla','1 tsp baking soda','½ tsp salt','2 cups chocolate chips'],
+directions:['Cream butter and sugars until fluffy.','Add eggs and vanilla.','Mix flour, cocoa, baking soda, and salt.','Combine wet and dry. Stir in chocolate chips.','Chill dough 30 min.','Preheat oven to 180°C. Drop spoonfuls on baking sheet.','Bake 10–12 min. Don\'t overbake.','Cool on sheet 5 min.'],
+tips:['Chill dough for thicker cookies','They stay fudgy when not overbaked','Use both dark and milk chips for complexity'],
+serve:['Warm with milk','As birthday treats','Ice cream cookie sandwiches','As gifts'],
+cal:200,protein:'3g',fat:'11g',carbs:'26g'},
+
+{id:48,emoji:'🥥',title:'Coconut Cookies',cat:'Cookies',serves:'24 cookies',prep:'15 min',cook:'12 min',desc:'Crisp, sweet cookies packed with toasted desiccated coconut — a tropical, satisfying bite that pairs perfectly with tea.',
+ingredients:['1½ cups flour (190g)','1 cup desiccated coconut','¾ cup butter (170g)','¾ cup sugar (150g)','1 egg','1 tsp vanilla','1 tsp baking powder','¼ tsp salt'],
+directions:['Cream butter and sugar until fluffy.','Add egg and vanilla.','Mix flour, coconut, baking powder, and salt.','Combine wet and dry.','Roll into balls. Flatten slightly on baking sheet.','Bake at 180°C for 10–12 min until golden.','Cool completely.'],
+tips:['Toast coconut beforehand for deeper flavour','Flatten slightly before baking','Store in an airtight container'],
+serve:['With tea or coffee','As a teatime treat','In lunchboxes','Dipped in chocolate'],
+cal:150,protein:'2g',fat:'9g',carbs:'17g'},
+
+{id:49,emoji:'🧈',title:'Butter Cookies',cat:'Cookies',serves:'30 cookies',prep:'20 min',cook:'12 min',desc:'Rich, crumbly, and melt-in-the-mouth butter cookies piped into rosette shapes — the kind you find in elegant blue tins at Christmas.',
+ingredients:['2 cups flour (250g)','1 cup butter (225g), softened','½ cup icing sugar (60g)','1 tsp vanilla','1 egg yolk','Pinch of salt'],
+directions:['Beat butter until very soft and pale.','Add icing sugar and beat until fluffy.','Add egg yolk and vanilla.','Fold in flour and salt until smooth.','Put dough into piping bag with star nozzle.','Pipe rosettes or fingers onto lined baking sheet.','Chill 15 min.','Bake at 180°C for 10–13 min until pale golden.'],
+tips:['Butter must be very soft for piping','Chill piped cookies before baking to hold shape','Don\'t overbake — should stay very pale'],
+serve:['In a tin as a gift','With tea','At Christmas','Dipped in chocolate'],
+cal:140,protein:'2g',fat:'8g',carbs:'16g'},
+
+{id:50,emoji:'🍪',title:'Snickerdoodles',cat:'Cookies',serves:'24 cookies',prep:'15 min',cook:'12 min',desc:'Soft, pillowy cookies rolled in cinnamon sugar before baking. Tangy from cream of tartar, with a beautiful crinkled surface.',
+ingredients:['2¾ cups flour (345g)','1 cup butter (225g)','1½ cups sugar (300g)','2 large eggs','2 tsp cream of tartar','1 tsp baking soda','¼ tsp salt','Rolling mix: 2 tbsp sugar + 1 tsp cinnamon'],
+directions:['Cream butter and sugar until fluffy.','Add eggs.','Mix flour, cream of tartar, baking soda, and salt.','Combine wet and dry. Chill 30 min.','Preheat oven to 190°C.','Roll tablespoon balls in cinnamon sugar.','Place on baking sheet, spaced apart.','Bake 8–10 min until edges set but centre is soft.','Cool 5 min on sheet.'],
+tips:['Don\'t skip cream of tartar — it\'s the defining flavour','Bake just until set for soft centres','They spread — leave space between them'],
+serve:['Warm from the oven','With hot apple cider or coffee','In a cookie tin','As a US-style classic treat'],
+cal:165,protein:'2g',fat:'8g',carbs:'23g'},
+
+// ─── DESSERTS ───
+{id:51,emoji:'🍮',title:'Chocolate Mousse',cat:'Desserts',serves:'6',prep:'20 min',cook:'0 min (chill 2hr)',desc:'An airy, rich, and indulgent French classic — silky smooth chocolate mousse that melts on the tongue. Deceptively simple to make.',
+ingredients:['200g good dark chocolate (70%)','4 large eggs, separated','3 tbsp sugar','1 cup heavy whipping cream (240ml)','1 tsp vanilla','Pinch of salt'],
+directions:['Melt chocolate in a bowl over hot water. Cool slightly.','Beat egg yolks with sugar until pale and thick.','Stir egg yolk mixture into melted chocolate.','Whip cream to soft peaks. Set aside.','Beat egg whites with salt to stiff peaks.','Fold cream into chocolate mixture gently.','Fold in egg whites in two additions.','Spoon into serving glasses. Chill at least 2 hours.'],
+tips:['Fold gently to keep the mousse airy','Use good quality chocolate','Chill for at least 2 hours before serving'],
+serve:['In small glasses','Topped with whipped cream','With raspberries','As a dinner party dessert'],
+cal:340,protein:'7g',fat:'24g',carbs:'28g'},
+
+{id:52,emoji:'🍮',title:'Vanilla Pudding',cat:'Desserts',serves:'4',prep:'5 min',cook:'15 min',desc:'A smooth, creamy, and comforting vanilla pudding made on the stovetop — simple, classic, and endlessly satisfying.',
+ingredients:['2 cups whole milk (480ml)','¼ cup sugar (50g)','3 tbsp cornflour','2 egg yolks','1 tbsp butter','2 tsp vanilla extract','Pinch of salt'],
+directions:['Whisk cornflour and sugar with ¼ cup of cold milk until smooth.','Heat remaining milk in a saucepan over medium heat until just simmering.','Whisk hot milk slowly into cornflour mixture.','Return to saucepan. Cook over medium heat, stirring constantly, until thick.','Remove from heat. Stir in butter and vanilla.','Strain through a sieve for extra smoothness.','Pour into serving dishes. Press cling wrap onto surface to prevent skin.','Chill 2 hours before serving.'],
+tips:['Stir constantly to prevent lumps','Strain for a silky-smooth texture','Press cling wrap onto surface while chilling'],
+serve:['Cold with fresh fruit','Warm as a comfort food','With caramel sauce','Layered in a trifle'],
+cal:220,protein:'5g',fat:'8g',carbs:'33g'},
+
+{id:53,emoji:'🍮',title:'Nigerian Custard',cat:'Desserts',serves:'4',prep:'5 min',cook:'10 min',desc:'A warm, sweet, milky custard made with Bird\'s or similar custard powder — a beloved Nigerian breakfast and dessert enjoyed across generations.',
+ingredients:['3 tbsp custard powder (Bird\'s or similar)','3 cups fresh or evaporated milk (720ml)','3–4 tbsp sugar','Pinch of nutmeg (optional)'],
+directions:['Mix custard powder with about ½ cup cold milk until smooth paste. No lumps.','Heat remaining milk in a saucepan until nearly boiling.','Pour hot milk slowly into custard paste while stirring.','Return mixture to saucepan.','Cook over medium heat, stirring constantly, until it thickens.','Add sugar and stir until dissolved.','Serve hot or warm.'],
+tips:['Mix powder with cold milk first to prevent lumps','Keep stirring throughout','Adjust sugar to taste'],
+serve:['With bread for breakfast','Over cake','As a warm dessert','With fruit salad'],
+cal:200,protein:'6g',fat:'5g',carbs:'33g'},
+
+{id:54,emoji:'🍦',title:'Basic Vanilla Ice Cream',cat:'Desserts',serves:'6–8',prep:'20 min',cook:'0 min (freeze 6hr)',desc:'Rich, creamy homemade vanilla ice cream without a machine — smooth, scoopable, and far better than shop-bought.',
+ingredients:['2 cups heavy whipping cream (480ml)','1 cup whole milk (240ml)','¾ cup sugar (150g)','3 egg yolks','2 tsp vanilla extract','Pinch of salt'],
+directions:['Heat milk and half the sugar until just simmering.','Whisk egg yolks with remaining sugar until pale.','Slowly pour hot milk into yolks while whisking.','Return to pan. Cook on low heat, stirring, until it coats a spoon. Do not boil.','Strain and cool completely.','Whip cream to soft peaks. Fold in custard base.','Add vanilla. Stir well.','Pour into container. Freeze 6–8 hours, stirring every 2 hours.'],
+tips:['Stir every 2 hours while freezing for smooth texture','Don\'t let the custard boil','Use full-fat cream for creaminess'],
+serve:['In a cone or cup','On cake','With warm brownie','As a float in cold soda'],
+cal:310,protein:'4g',fat:'22g',carbs:'27g'},
+
+{id:55,emoji:'🍫',title:'Chocolate Ice Cream',cat:'Desserts',serves:'6–8',prep:'20 min',cook:'0 min (freeze 6hr)',desc:'Intensely chocolatey, velvety homemade ice cream — richer and darker than anything from a tub. A true chocolate lover\'s treat.',
+ingredients:['2 cups heavy cream (480ml)','1 cup milk (240ml)','¾ cup sugar (150g)','4 egg yolks','½ cup cocoa powder (50g)','100g dark chocolate, melted','2 tsp vanilla','Pinch of salt'],
+directions:['Whisk cocoa and sugar into milk. Heat until just simmering.','Whisk egg yolks. Pour hot mixture slowly over yolks while whisking.','Return to pan. Cook over low heat until thick enough to coat a spoon.','Remove from heat. Stir in melted chocolate and vanilla.','Cool completely.','Whip cream to soft peaks. Fold into chocolate base.','Pour into container and freeze.','Stir every 2 hours for 6–8 hours until scoopable.'],
+tips:['Melt chocolate separately for deeper flavour','Stir while freezing for smooth texture','Use high-quality cocoa powder'],
+serve:['In a waffle cone','With hot fudge sauce','On warm brownie','Sandwiched between cookies'],
+cal:330,protein:'5g',fat:'23g',carbs:'29g'},
+
+{id:56,emoji:'🍓',title:'Fruit Salad with Cream',cat:'Desserts',serves:'6',prep:'15 min',cook:'0 min',desc:'A vibrant, refreshing medley of tropical and seasonal fruits served with lightly whipped sweetened cream. Simple, colourful, and crowd-pleasing.',
+ingredients:['2 cups watermelon, cubed','1 cup mango, diced','1 cup pineapple, diced','1 banana, sliced','1 apple, diced','1 cup grapes (halved)','Juice of 1 lime','1 tbsp honey','1 cup heavy cream, whipped with 2 tbsp sugar'],
+directions:['Prepare all fruit and combine in a large bowl.','Squeeze lime juice over and drizzle honey. Toss gently.','Refrigerate until ready to serve.','Whip cream with sugar until soft peaks form.','Serve fruit in bowls with whipped cream on the side or on top.'],
+tips:['Add banana last to prevent browning','Use the freshest seasonal fruit available','Lime juice keeps fruit bright and fresh'],
+serve:['Chilled as a dessert','For breakfast','At parties','Alongside cake'],
+cal:210,protein:'2g',fat:'12g',carbs:'27g'},
+
+{id:57,emoji:'🍨',title:'Trifle',cat:'Desserts',serves:'8–10',prep:'30 min',cook:'0 min (chill 2hr)',desc:'A spectacular layered British dessert of sponge, jelly, custard, and whipped cream — a show-stopper for any gathering.',
+ingredients:['1 basic sponge cake (page 1), cubed','1 cup strawberry or raspberry jelly, set then cubed','2 cups prepared custard (page 53)','1 cup strawberry or raspberry jam','2 cups heavy cream, whipped','Fresh berries and fruit for decoration','Optional: 3 tbsp fruit juice or syrup'],
+directions:['Layer sponge cubes in the base of a large glass bowl.','Sprinkle with fruit juice if using.','Spread jam over sponge.','Add a layer of jelly cubes.','Pour warm custard over. Refrigerate to set.','Spread whipped cream over top.','Decorate with fresh fruit, berries, or chocolate shavings.','Chill 2 hours before serving.'],
+tips:['Glass bowl shows off the beautiful layers','Chill well before serving','Prepare custard a day ahead if possible'],
+serve:['At Christmas celebrations','At buffets','As a party centrepiece','For Sunday dinner'],
+cal:380,protein:'5g',fat:'20g',carbs:'46g'},
+
+{id:58,emoji:'🍚',title:'Rice Pudding',cat:'Desserts',serves:'4',prep:'5 min',cook:'40 min',desc:'A creamy, comforting, and gently sweet baked or stovetop rice pudding — warm, milky, and deeply satisfying.',
+ingredients:['½ cup short-grain or arborio rice (100g)','2 cups whole milk (480ml)','1 cup evaporated milk (240ml)','3 tbsp sugar','1 tsp vanilla extract','¼ tsp cinnamon or nutmeg','Pinch of salt'],
+directions:['Stovetop: Combine rice, milk, and salt in a saucepan.','Cook over medium-low heat, stirring frequently, for 25–30 min.','When rice is tender and mixture is creamy, add sugar, vanilla, and spice.','Stir until dissolved.','Serve warm or pour into bowls and refrigerate.','Baked version: Mix all in an oven dish. Cover with foil. Bake 160°C for 1.5 hours, stirring once midway.'],
+tips:['Stir frequently on stovetop to prevent sticking','Use evaporated milk for richness','Pudding thickens further as it cools'],
+serve:['Warm in bowls','With jam on top','Chilled for a cold version','With a sprinkle of cinnamon'],
+cal:260,protein:'8g',fat:'7g',carbs:'42g'},
+
+{id:59,emoji:'🍞',title:'Bread Pudding',cat:'Desserts',serves:'6–8',prep:'20 min',cook:'45 min',desc:'A warmly spiced, custard-soaked baked pudding made from stale bread — one of the most satisfying ways to use up day-old bread.',
+ingredients:['8 slices stale bread, cubed','2 cups milk (480ml)','3 large eggs','½ cup sugar (100g)','1 tsp vanilla','1 tsp cinnamon','2 tbsp butter, melted','½ cup raisins (optional)'],
+directions:['Grease a baking dish. Spread bread cubes inside.','Scatter raisins if using.','Whisk eggs, milk, sugar, vanilla, cinnamon, and melted butter.','Pour custard over bread. Press down so all bread soaks up mixture.','Let stand 15–20 min so bread absorbs fully.','Bake at 180°C for 40–45 min until set and golden on top.','Serve warm.'],
+tips:['Use stale bread for the best absorption','Let bread soak properly before baking','Serve with warm custard or vanilla sauce'],
+serve:['With warm custard sauce','With vanilla ice cream','Drizzled with caramel sauce','As a warm winter dessert'],
+cal:290,protein:'8g',fat:'9g',carbs:'44g'},
+
+{id:60,emoji:'🍮',title:'Crème Caramel',cat:'Desserts',serves:'6',prep:'20 min',cook:'50 min',desc:'A silky, wobbling set custard sitting on a pool of golden caramel. The French classic — dramatic and utterly delicious.',
+ingredients:['Caramel: ¾ cup sugar (150g) + 2 tbsp water','Custard: 2 cups whole milk (480ml), 3 eggs + 2 yolks, ½ cup sugar (100g), 1 tsp vanilla'],
+directions:['Heat sugar and water in saucepan without stirring until amber caramel.','Pour quickly into 6 ramekins, tilting to coat base. Set aside.','Heat milk until just simmering.','Whisk eggs, yolks, and sugar. Stir in vanilla.','Pour hot milk slowly into egg mixture while whisking.','Strain through sieve. Pour into ramekins.','Place ramekins in a baking dish. Pour hot water halfway up sides.','Bake at 160°C for 40–45 min until just set.','Chill overnight. Invert to serve.'],
+tips:['Watch caramel carefully — it burns fast','Bake in a water bath to prevent curdling','Chill overnight for best results'],
+serve:['Inverted onto a plate','As a dinner party finale','Chilled and elegant','With fresh cream'],
+cal:290,protein:'6g',fat:'8g',carbs:'48g'},
+
+// ─── BREAKFAST TREATS ───
+{id:61,emoji:'🥞',title:'Pancakes',cat:'Breakfast Treats',serves:'8–10 pancakes',prep:'10 min',cook:'20 min',desc:'Fluffy, golden American-style pancakes that are light and airy inside with slightly crisp edges — perfect stacked high with maple syrup.',
+ingredients:['1½ cups all-purpose flour (190g)','2 tbsp sugar','2 tsp baking powder','½ tsp salt','1¼ cups milk (300ml)','1 large egg','3 tbsp butter, melted','1 tsp vanilla'],
+directions:['Mix flour, sugar, baking powder, and salt.','Whisk milk, egg, butter, and vanilla in another bowl.','Pour wet into dry. Mix until just combined — lumps are fine.','Heat a non-stick pan over medium heat. Lightly grease.','Pour ¼ cup batter per pancake.','Cook until bubbles form on top and edges look dry.','Flip once. Cook 1–2 min more.','Serve immediately.'],
+tips:['Don\'t overmix — lumpy batter = fluffy pancakes','Medium heat gives even golden colour','Rest batter 5 min before cooking'],
+serve:['Maple syrup and butter','Fresh berries','Chocolate sauce','Whipped cream and bananas'],
+cal:180,protein:'5g',fat:'6g',carbs:'27g'},
+
+{id:62,emoji:'🧇',title:'Waffles',cat:'Breakfast Treats',serves:'6 waffles',prep:'15 min',cook:'20 min',desc:'Crisp-on-the-outside, soft-on-the-inside Belgian-style waffles with deep pockets perfect for holding syrup, fruit, or ice cream.',
+ingredients:['2 cups flour (250g)','2 tbsp sugar','1 tbsp baking powder','½ tsp salt','2 large eggs (separated)','1¾ cups milk (420ml)','½ cup butter (115g), melted','1 tsp vanilla'],
+directions:['Preheat waffle iron. Grease lightly.','Mix flour, sugar, baking powder, and salt.','Whisk egg yolks, milk, butter, and vanilla.','Beat egg whites to stiff peaks.','Combine wet and dry. Gently fold in egg whites.','Pour batter into hot waffle iron. Cook until steam stops.','Serve immediately while crispy.'],
+tips:['Separated egg whites are the secret to light waffles','Don\'t open iron too early','Serve immediately for crispness'],
+serve:['Maple syrup and butter','Fresh strawberries and cream','Ice cream and chocolate sauce','Savoury: fried chicken and waffles'],
+cal:280,protein:'7g',fat:'13g',carbs:'34g'},
+
+{id:63,emoji:'🍞',title:'French Toast',cat:'Breakfast Treats',serves:'4',prep:'10 min',cook:'15 min',desc:'Golden, custardy slices of bread soaked in spiced egg mixture and pan-fried to perfection. A luxurious way to start the day.',
+ingredients:['4 thick slices bread (brioche or white)','2 eggs','¼ cup milk (60ml)','1 tbsp sugar','½ tsp cinnamon','1 tsp vanilla','Butter for frying','Powdered sugar or maple syrup to serve'],
+directions:['Whisk eggs, milk, sugar, cinnamon, and vanilla together.','Heat butter in a pan over medium heat.','Dip each bread slice in the egg mixture, coating both sides.','Let it soak for 10–15 seconds each side.','Fry in butter for 2–3 min per side until golden brown.','Dust with powdered sugar and serve immediately.'],
+tips:['Thick-cut bread works best — brioche is ideal','Don\'t soak too long or it becomes soggy','Medium heat for golden colour without burning'],
+serve:['Maple syrup','Fresh berries','Whipped cream','A dusting of icing sugar'],
+cal:260,protein:'8g',fat:'10g',carbs:'36g'},
+
+{id:64,emoji:'🫓',title:'Crêpes',cat:'Breakfast Treats',serves:'12 crêpes',prep:'10 min',cook:'20 min',desc:'Ultra-thin French crêpes with lacy edges — perfect for sweet fillings, Nutella, fruit, or the classic lemon and sugar.',
+ingredients:['1 cup flour (125g)','2 large eggs','1½ cups milk (360ml)','2 tbsp butter, melted','1 tbsp sugar','1 tsp vanilla','Pinch of salt'],
+directions:['Blend or whisk all ingredients until smooth.','Rest batter 30 min.','Heat a 20–24cm pan over medium-high heat. Brush with butter.','Pour ¼ cup batter. Swirl pan quickly to spread thin.','Cook 1–2 min until edge lifts. Flip.','Cook 30 seconds more.','Stack on a plate with baking paper between.'],
+tips:['Rest batter for less bubbly crêpes','Pan must be hot before adding batter','The first one is always a test — discard it'],
+serve:['Nutella and banana','Lemon juice and sugar','Whipped cream and strawberries','Ham and cheese (savoury)'],
+cal:140,protein:'5g',fat:'5g',carbs:'19g'},
+
+{id:65,emoji:'🍌',title:'Banana Pancakes',cat:'Breakfast Treats',serves:'8 pancakes',prep:'10 min',cook:'15 min',desc:'Naturally sweet, tender pancakes made with mashed banana — no refined sugar needed. A wholesome and delicious breakfast.',
+ingredients:['1 cup flour (125g)','1 tbsp baking powder','Pinch of salt','2 ripe bananas, mashed','2 eggs','½ cup milk (120ml)','1 tbsp butter, melted','½ tsp vanilla','½ tsp cinnamon'],
+directions:['Mash bananas until smooth.','Whisk in eggs, milk, butter, and vanilla.','Mix flour, baking powder, salt, and cinnamon.','Fold dry into wet until just combined.','Cook on a greased medium-heat pan.','Flip when bubbles form.','Serve warm.'],
+tips:['Very ripe bananas give the best flavour','These pancakes are more delicate than regular — flip carefully','No extra sugar needed if bananas are ripe'],
+serve:['With honey drizzle','Fresh blueberries','Maple syrup','Peanut butter spread'],
+cal:170,protein:'5g',fat:'5g',carbs:'26g'},
+
+// ─── NO-BAKE ───
+{id:66,emoji:'🍫',title:'Chocolate Fudge',cat:'No-Bake Treats',serves:'24 pieces',prep:'15 min',cook:'0 min (chill 2hr)',desc:'Rich, dense, and deeply chocolatey fudge that melts in your mouth. Incredibly easy to make and brilliantly addictive.',
+ingredients:['400g dark or milk chocolate, chopped','1 can condensed milk (397g)','2 tbsp butter','1 tsp vanilla','Pinch of salt','Optional: nuts, sea salt, or dried cranberries'],
+directions:['Line a 20x20cm tin with baking paper.','Combine chocolate, condensed milk, and butter in a saucepan.','Heat on low, stirring constantly, until smooth and melted.','Remove from heat. Stir in vanilla and salt.','Pour into prepared tin. Smooth the top.','Scatter any toppings if using.','Refrigerate 2 hours until firm.','Cut into squares.'],
+tips:['Use good quality chocolate','Don\'t overheat — keep heat low and stir constantly','Refrigerate until fully set before cutting'],
+serve:['As a gift in a box','At Christmas','With coffee','As a sweet treat'],
+cal:160,protein:'2g',fat:'8g',carbs:'22g'},
+
+{id:67,emoji:'🍫',title:'Rocky Road',cat:'No-Bake Treats',serves:'16 pieces',prep:'15 min',cook:'0 min (chill 2hr)',desc:'A decadent no-bake chocolate slab studded with marshmallows, biscuits, and nuts — crunchy, chewy, and completely irresistible.',
+ingredients:['300g dark or milk chocolate','100g butter','3 tbsp golden syrup or honey','150g digestive biscuits, broken','100g mini marshmallows','50g mixed nuts (optional)','Icing sugar for dusting'],
+directions:['Melt chocolate, butter, and golden syrup together over low heat.','Stir until smooth. Cool slightly.','Add broken biscuits, marshmallows, and nuts. Stir gently.','Pour into lined 20x20cm tin.','Smooth the top and press down gently.','Refrigerate 2 hours until set.','Dust with icing sugar. Cut into squares.'],
+tips:['Don\'t break biscuits too small — chunks give great texture','Cool chocolate before adding marshmallows','Store in fridge'],
+serve:['As a party treat','In a lunchbox','As a gift','With coffee or tea'],
+cal:200,protein:'3g',fat:'12g',carbs:'24g'},
+
+{id:68,emoji:'🍫',title:'No-Bake Chocolate Bars',cat:'No-Bake Treats',serves:'16 bars',prep:'20 min',cook:'0 min (chill 2hr)',desc:'Layers of biscuit base, smooth peanut butter filling, and chocolate topping — homemade chocolate bars that rival any shop-bought version.',
+ingredients:['200g digestive biscuits, crushed','100g butter, melted','1 cup icing sugar (120g)','1 cup peanut butter (smooth)','200g milk chocolate','1 tbsp butter (for topping)'],
+directions:['Mix crushed biscuits with melted butter. Press into lined tin. Chill.','Beat icing sugar and peanut butter until smooth.','Spread peanut butter layer over biscuit base. Chill 30 min.','Melt chocolate with butter.','Pour over peanut butter layer. Smooth top.','Refrigerate 1–2 hours until fully set.','Cut with a warm knife.'],
+tips:['Chill each layer before adding the next','Use a sharp warm knife for clean cuts','Store in fridge'],
+serve:['Chilled as a snack','As a gift','At parties','With tea or coffee'],
+cal:240,protein:'5g',fat:'15g',carbs:'25g'},
+
+{id:69,emoji:'⚡',title:'Energy Balls',cat:'No-Bake Treats',serves:'20 balls',prep:'15 min',cook:'0 min (chill 1hr)',desc:'No-bake, naturally sweetened energy balls packed with oats, peanut butter, and honey — the perfect wholesome snack for any time of day.',
+ingredients:['1 cup rolled oats','½ cup peanut butter or almond butter','⅓ cup honey or agave syrup','½ cup desiccated coconut','¼ cup chocolate chips','2 tbsp chia or flax seeds (optional)','1 tsp vanilla'],
+directions:['Mix all ingredients together in a bowl until well combined.','Refrigerate for 30–60 min until firm enough to roll.','Roll tablespoon-sized portions into balls.','Refrigerate for 30 min more until set.','Store in an airtight container in the fridge.'],
+tips:['Chill mixture before rolling — much easier to handle','Customise with dried fruit, seeds, or protein powder','Store in fridge up to 1 week'],
+serve:['As a pre-workout snack','In a lunchbox','As a healthy sweet treat','For kids\' after-school snacks'],
+cal:100,protein:'3g',fat:'5g',carbs:'13g'},
+
+{id:70,emoji:'🎂',title:'Biscuit Cake',cat:'No-Bake Treats',serves:'8–10',prep:'20 min',cook:'0 min (chill 4hr)',desc:'A classic no-bake refrigerator cake made with layers of biscuits and chocolate cream — beloved by generations for good reason.',
+ingredients:['300g plain digestive or Marie biscuits','1 can condensed milk (397g)','½ cup cocoa powder (50g)','100g butter, melted','1 tsp vanilla','Optional: cherries or nuts'],
+directions:['Mix condensed milk, cocoa, melted butter, and vanilla until smooth.','Line a loaf tin or round tin with cling film.','Layer biscuits at the base. Spoon chocolate mixture over.','Alternate biscuit layers and chocolate mixture.','Press down gently. Finish with chocolate on top.','Cover and refrigerate at least 4 hours or overnight.','Invert and slice.'],
+tips:['Press layers firmly','Overnight chilling gives the best result','Dip biscuits briefly in milk for a softer cake'],
+serve:['Chilled, sliced thin','With tea','At birthday parties','As an easy celebration cake'],
+cal:280,protein:'4g',fat:'12g',carbs:'42g'},
+
+// ─── PIES AND TARTS ───
+{id:71,emoji:'🥧',title:'Apple Pie',cat:'Pies & Tarts',serves:'8',prep:'40 min',cook:'55 min',desc:'A deep-filled, double-crust apple pie with warm cinnamon spicing and a golden, flaky pastry — the most iconic pie in the world.',
+ingredients:['Shortcrust pastry (double quantity, page 35)','6 apples (Granny Smith or mixed), peeled and sliced','¾ cup sugar (150g)','2 tsp cinnamon','¼ tsp nutmeg','2 tbsp cornflour','1 tbsp lemon juice','2 tbsp butter','Egg wash'],
+directions:['Make shortcrust pastry. Chill 30 min.','Mix apples with sugar, cinnamon, nutmeg, cornflour, and lemon juice.','Line a 9-inch pie dish with pastry. Fill with apple mixture. Dot with butter.','Cover with second pastry layer. Trim and crimp edges.','Cut vents in the top.','Brush with egg wash.','Bake at 200°C for 20 min, then 180°C for 30–35 min until golden.','Cool 20 min before serving.'],
+tips:['Tart apples give the best flavour','Vent the top well to prevent soggy pastry','Let it cool before cutting so filling sets'],
+serve:['Warm with custard','Vanilla ice cream','Clotted cream','With sharp cheddar (traditional)'],
+cal:390,protein:'5g',fat:'18g',carbs:'54g'},
+
+{id:72,emoji:'🥧',title:'Classic Meat Pie (Large)',cat:'Pies & Tarts',serves:'8',prep:'45 min',cook:'45 min',desc:'A full-size baked Nigerian-style meat pie in a shortcrust pastry shell — a proper celebration pie made for sharing.',
+ingredients:['3 cups flour (375g)','150g cold butter','1 tsp salt','Cold water','Filling: 500g minced beef, 2 potatoes diced, 1 carrot diced, 1 onion, 1 stock cube, curry, salt, pepper, 2 tbsp flour to thicken'],
+directions:['Make shortcrust pastry. Chill.','Cook filling: brown mince, add vegetables and seasoning, thicken with flour. Cool.','Line a pie dish with pastry. Pour cooled filling in.','Cover with pastry lid. Crimp edges. Vent top.','Brush with egg wash.','Bake 180°C for 40–45 min until golden.','Rest 10 min before serving.'],
+tips:['Filling must be cold before adding to pastry','Season filling generously','A well-crimped edge prevents leaking'],
+serve:['At celebrations and parties','With chilled drinks','Hot or at room temperature','As the star of any event'],
+cal:430,protein:'20g',fat:'22g',carbs:'42g'},
+
+{id:73,emoji:'🥧',title:'Pumpkin Pie',cat:'Pies & Tarts',serves:'8',prep:'30 min',cook:'55 min',desc:'A warmly spiced custard pie in a crisp pastry shell — silky smooth with deep flavours of cinnamon, ginger, and nutmeg.',
+ingredients:['1 shortcrust pastry case (see page 35)','2 cups pumpkin purée (canned or roasted)','¾ cup sugar (150g)','1 tsp cinnamon','½ tsp ginger powder','¼ tsp nutmeg','¼ tsp cloves','2 eggs','1 cup evaporated milk (240ml)','1 tsp vanilla'],
+directions:['Blind-bake pastry case at 200°C for 15 min.','Whisk pumpkin, sugar, spices, eggs, milk, and vanilla until smooth.','Pour into baked pastry case.','Bake at 180°C for 40–50 min until set but with a slight wobble.','Cool completely before slicing.'],
+tips:['Cool completely before cutting','Blind-bake pastry to prevent soggy base','Don\'t overbake — slight wobble is correct'],
+serve:['With whipped cream','At Thanksgiving or Christmas','Chilled','With cinnamon cream'],
+cal:310,protein:'6g',fat:'12g',carbs:'46g'},
+
+{id:74,emoji:'🍋',title:'Lemon Tart',cat:'Pies & Tarts',serves:'8',prep:'30 min',cook:'40 min',desc:'A silky, intensely lemony filling set in a crisp, buttery tart shell — sharp, sweet, and completely elegant.',
+ingredients:['Sweet shortcrust pastry: 1½ cups flour, ½ cup butter, ¼ cup icing sugar, 1 egg yolk, 2 tbsp cold water','Filling: 4 eggs + 2 yolks, ¾ cup sugar, ½ cup lemon juice, zest of 2 lemons, 100g butter'],
+directions:['Make sweet pastry: blend flour, butter, and sugar. Add yolk and water. Chill 30 min.','Blind-bake tart case at 190°C for 15–20 min until golden.','Whisk eggs, yolks, sugar, lemon juice, and zest.','Heat in saucepan over medium heat, stirring, until thick.','Remove from heat. Add butter. Stir until smooth.','Pour filling into tart case. Bake 180°C for 15–20 min until just set.','Cool. Dust with icing sugar.'],
+tips:['Blind bake the pastry well — no soggy base','Filling should have a slight wobble when done','Chill before dusting with icing sugar'],
+serve:['Chilled with cream','Warm and fresh from oven','At afternoon tea','As an elegant dinner party dessert'],
+cal:350,protein:'6g',fat:'18g',carbs:'43g'},
+
+{id:75,emoji:'🍫',title:'Chocolate Tart',cat:'Pies & Tarts',serves:'8',prep:'30 min',cook:'35 min',desc:'A luxurious dark chocolate ganache tart in a crisp pastry shell — rich, silky, and deeply indulgent.',
+ingredients:['Sweet pastry case (see Lemon Tart, page 74)','Ganache filling: 300g dark chocolate (70%), 1 cup heavy cream (240ml), 2 tbsp butter, 2 tbsp sugar, 1 tsp vanilla'],
+directions:['Make and blind-bake sweet pastry case.','Heat cream and sugar until just simmering.','Pour over chopped chocolate. Let stand 2 min.','Stir until smooth. Add butter and vanilla.','Pour ganache into pastry case.','Cool at room temperature then refrigerate 2 hours.','Slice with a warm knife.'],
+tips:['Use high-quality dark chocolate','Let ganache cool slowly at room temperature first','Warm knife gives clean slices'],
+serve:['With whipped cream','Raspberries and mint','A dusting of cocoa powder','As a dinner party dessert'],
+cal:450,protein:'5g',fat:'32g',carbs:'38g'},
+
+{id:76,emoji:'🫐',title:'Fruit Tart',cat:'Pies & Tarts',serves:'8',prep:'40 min',cook:'20 min',desc:'A stunning French-style tart with a crisp pastry base, luscious pastry cream filling, and a rainbow of fresh fruit arranged on top.',
+ingredients:['Sweet pastry case (page 74)','Pastry cream: 2 cups milk, 4 egg yolks, ½ cup sugar, ¼ cup cornflour, 2 tbsp butter, 1 tsp vanilla','Fresh fruit: strawberries, blueberries, kiwi, mango, raspberries','2 tbsp apricot jam + 1 tbsp water (glaze)'],
+directions:['Make and cool pastry case.','Cook pastry cream: heat milk; whisk yolks, sugar, cornflour; combine; cook until thick; add butter and vanilla. Cool completely.','Fill tart case with pastry cream.','Arrange fruit decoratively over the top.','Warm apricot jam with water and brush over fruit for a glaze.','Refrigerate until ready to serve.'],
+tips:['Cool pastry cream completely before filling','Arrange fruit just before serving','Glaze prevents fruit from drying out'],
+serve:['At celebrations and birthdays','As a centrepiece dessert','Chilled','For afternoon tea'],
+cal:360,protein:'7g',fat:'18g',carbs:'44g'},
+
+// ─── SNACKS & TREATS ───
+{id:77,emoji:'🍯',title:'Caramel Sauce',cat:'Snacks & Treats',serves:'1 cup (240ml)',prep:'5 min',cook:'15 min',desc:'A rich, silky, and deeply flavoured homemade caramel sauce — essential for drizzling over ice cream, cakes, and desserts.',
+ingredients:['1 cup sugar (200g)','6 tbsp unsalted butter (85g)','½ cup heavy cream (120ml)','1 tsp vanilla','½ tsp salt'],
+directions:['Heat sugar in a saucepan over medium heat, stirring until melted and amber coloured.','Remove from heat immediately when deep amber colour is reached.','Add butter carefully — it will bubble vigorously.','Stir until butter is fully incorporated.','Add cream slowly while stirring.','Return to heat for 1 min. Stir in vanilla and salt.','Cool slightly. Pour into a jar.'],
+tips:['Watch caramel closely — it burns in seconds','Add butter and cream carefully as it will bubble','Sauce thickens as it cools'],
+serve:['Over ice cream','On apple pie','Drizzled over cake','In coffee as a syrup'],
+cal:110,protein:'0g',fat:'7g',carbs:'14g'},
+
+{id:78,emoji:'🍫',title:'Chocolate Sauce',cat:'Snacks & Treats',serves:'1 cup',prep:'5 min',cook:'10 min',desc:'A luscious, pourable chocolate sauce that\'s rich and glossy — perfect for sundaes, cakes, or straight from the spoon.',
+ingredients:['½ cup cocoa powder (50g)','1 cup water (240ml)','¾ cup sugar (150g)','1 tsp vanilla','2 tbsp butter','Pinch of salt'],
+directions:['Combine cocoa, sugar, and water in a saucepan.','Whisk until smooth.','Cook over medium heat, stirring, until it comes to a simmer.','Simmer 3–5 min until slightly thick.','Remove from heat. Add butter, vanilla, and salt.','Stir until smooth. Cool slightly.','Store in a jar in the fridge.'],
+tips:['Stir constantly to prevent burning','Sauce thickens as it cools','Reheat gently with a splash of water if needed'],
+serve:['Ice cream sundaes','Over pancakes','On profiteroles','As a dip for strawberries'],
+cal:90,protein:'1g',fat:'3g',carbs:'16g'},
+
+{id:79,emoji:'🍬',title:'Toffee',cat:'Snacks & Treats',serves:'20 pieces',prep:'5 min',cook:'20 min',desc:'Hard, buttery, deep amber toffee that shatters beautifully when broken — rich with caramel flavour and a satisfying crunch.',
+ingredients:['1 cup sugar (200g)','½ cup butter (115g)','2 tbsp golden syrup or corn syrup','¼ tsp salt'],
+directions:['Line a baking sheet with lightly oiled foil.','Combine all ingredients in a heavy saucepan.','Cook over medium heat, stirring, until mixture reaches 149°C (300°F) — hard crack stage.','Pour immediately onto prepared sheet.','Tilt to spread thin.','Cool completely until hard.','Break into pieces.'],
+tips:['A sugar thermometer is very helpful','Pour quickly — it sets fast','Do not stir after 140°C or it may crystallise'],
+serve:['As a sweet treat','Broken over ice cream','As a gift in a tin','Coated in chocolate'],
+cal:120,protein:'0g',fat:'6g',carbs:'17g'},
+
+{id:80,emoji:'🥜',title:'Peanut Brittle',cat:'Snacks & Treats',serves:'20–25 pieces',prep:'5 min',cook:'20 min',desc:'A crisp, amber caramel studded with roasted peanuts — a classic confection that is sweet, nutty, and satisfyingly crunchy.',
+ingredients:['1 cup sugar (200g)','½ cup corn syrup or golden syrup (120ml)','¼ cup water (60ml)','1½ cups roasted unsalted peanuts (210g)','2 tbsp butter','1 tsp vanilla','1 tsp baking soda','½ tsp salt'],
+directions:['Line a baking sheet with lightly greased baking paper.','Combine sugar, corn syrup, and water in a saucepan.','Cook over medium-high heat, without stirring, until it reaches 149°C (300°F).','Stir in peanuts, butter, vanilla, and salt.','Remove from heat immediately. Stir in baking soda — it will foam.','Pour quickly onto prepared sheet. Spread thin with a spoon.','Cool completely (about 30 min) until fully hardened.','Break into irregular pieces.'],
+tips:['Work quickly once peanuts and baking soda are added','The baking soda creates air bubbles that make it lighter and crispier','Store in an airtight container to prevent stickiness'],
+serve:['As a snack','At celebrations','Broken over ice cream','As a festive gift in a jar'],
+cal:130,protein:'3g',fat:'6g',carbs:'18g'},
+];
+
+const SECTIONS = [
+  {label:'🍰 Cakes', range:[1,15]},
+  {label:'🧁 Cupcakes & Small Cakes', range:[16,23]},
+  {label:'🍩 Dough-Based Treats', range:[24,30]},
+  {label:'🥐 Pastries', range:[31,40]},
+  {label:'🍪 Cookies & Biscuits', range:[41,50]},
+  {label:'🍮 Desserts', range:[51,60]},
+  {label:'🥞 Breakfast & Light Treats', range:[61,65]},
+  {label:'🍫 No-Bake & Quick Desserts', range:[66,70]},
+  {label:'🥧 Pies & Tarts', range:[71,76]},
+  {label:'🍬 Snacks & Treats', range:[77,80]},
+];
+
+let currentPage = 1;
+
+function buildToc() {
+  const grid = document.getElementById('toc-grid');
+  let sectionIdx = 0;
+  RECIPES.forEach((r, i) => {
+    const s = SECTIONS[sectionIdx];
+    if (r.id === s.range[0]) {
+      const sec = document.createElement('div');
+      sec.className = 'toc-section';
+      sec.textContent = s.label;
+      grid.appendChild(sec);
+      if (sectionIdx < SECTIONS.length - 1) sectionIdx++;
+    }
+    const item = document.createElement('div');
+    item.className = 'toc-item';
+    item.innerHTML = `<span class="num">${r.id}.</span>${r.emoji} ${r.title}`;
+    item.onclick = () => goToPage(r.id);
+    grid.appendChild(item);
+  });
+}
+
+function showToc() {
+  document.getElementById('cover-toc').style.display = '';
+  document.getElementById('recipe-view').style.display = 'none';
+}
+
+function showRecipeView() {
+  document.getElementById('cover-toc').style.display = 'none';
+  document.getElementById('recipe-view').style.display = '';
+}
+
+function goToPage(n) {
+  currentPage = Math.max(1, Math.min(80, n));
+  renderPage();
+  showRecipeView();
+  window.scrollTo(0,0);
+}
+
+function prevPage() { goToPage(currentPage - 1); }
+function nextPage() { goToPage(currentPage + 1); }
+function jumpTo() {
+  const v = parseInt(document.getElementById('jump-input').value);
+  if (v >= 1 && v <= 80) goToPage(v);
+}
+
+function getImagePath(recipeId) {
+  return `${recipeId}. ${RECIPES[recipeId - 1].title}.jpg`;
+}
+
+function renderPage() {
+  const r = RECIPES[currentPage - 1];
+  document.getElementById('page-info').textContent = `Recipe ${r.id} of 80 — ${r.cat}`;
+  document.getElementById('prev-btn').disabled = currentPage === 1;
+  document.getElementById('next-btn').disabled = currentPage === 80;
+
+  const imgPath = getImagePath(r.id);
+
+  const ingHTML = r.ingredients.map(i => `<li>${i}</li>`).join('');
+  const dirHTML = r.directions.map((d,i) => `<li>${d}</li>`).join('');
+  const tipHTML = r.tips.map(t => `<li>${t}</li>`).join('');
+  const serveHTML = r.serve.map(s => `<li>${s}</li>`).join('');
+
+  document.getElementById('recipe-page').innerHTML = `
+    <div class="recipe-header">
+      <div>
+        <h2>${r.emoji} ${r.title}</h2>
+        <div class="meta">
+          <div class="meta-item"><div class="label">Servings</div><div class="value">${r.serves}</div></div>
+          <div class="meta-item"><div class="label">Prep Time</div><div class="value">${r.prep}</div></div>
+          <div class="meta-item"><div class="label">Cook Time</div><div class="value">${r.cook}</div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <div class="download-btns">
+          <button class="download-btn" onclick="downloadPagePDF(${r.id})" title="Export as PDF">📄 PDF</button>
+          <button class="download-btn docx" onclick="downloadPageDOCX(${r.id})" title="Export as DOCX">📝 DOCX</button>
+        </div>
+        <div class="page-num-badge">${r.id}</div>
+      </div>
+    </div>
+    <div class="desc-strip">${r.desc}</div>
+    <div class="recipe-body">
+      <div class="recipe-img">
+        <img src="${imgPath}" alt="${r.title}" onerror="this.parentElement.innerHTML='<div class=placeholder>🖼️</div>'">
+      </div>
+      <div class="ingredients-col">
+        <h3>Ingredients</h3>
+        <ul>${ingHTML}</ul>
+      </div>
+      <div class="directions-col">
+        <h3>Directions</h3>
+        <ol>${dirHTML}</ol>
+      </div>
+    </div>
+    <div class="recipe-footer">
+      <div class="footer-block tips">
+        <h4>⚠ Common Mistakes to Avoid</h4>
+        <ul>${tipHTML}</ul>
+      </div>
+      <div class="footer-block serve">
+        <h4>🍽 Serving Suggestions</h4>
+        <ul>${serveHTML}</ul>
+      </div>
+    </div>
+    <div class="nutrition-bar">
+      <span>Per Serving:</span>
+      Calories: <span>${r.cal} kcal</span> &nbsp;|&nbsp;
+      Protein: <span>${r.protein}</span> &nbsp;|&nbsp;
+      Fat: <span>${r.fat}</span> &nbsp;|&nbsp;
+      Carbs: <span>${r.carbs}</span>
+    </div>
+  `;
+}
+
+buildToc();
+// Add click-to-go on cover title for quick access
+document.querySelector('.cover').onclick = null;
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+function toggleBulkMenu() {
+  const menu = document.getElementById('bulk-menu');
+  menu.classList.toggle('active');
+  document.addEventListener('click', function closeMenu(e) {
+    if (!document.getElementById('bulk-btn').contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.remove('active');
+      document.removeEventListener('click', closeMenu);
+    }
+  });
+}
+
+async function downloadPagePDF(pageId) {
+  try {
+    const recipe = RECIPES[pageId - 1];
+    const element = document.getElementById('recipe-page');
+    const opt = {
+      margin: 10,
+      filename: `${pageId}-${recipe.title}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+    await html2pdf().set(opt).from(element).save();
+  } catch (err) {
+    console.error('PDF export error:', err);
+    alert('Failed to export PDF. Please try again.');
+  }
+}
+
+async function downloadPageDOCX(pageId) {
+  try {
+    const recipe = RECIPES[pageId - 1];
+    const imgPath = getImagePath(pageId);
+    
+    let imageBlob = null;
+    try {
+      const response = await fetch(imgPath);
+      if (response.ok) {
+        imageBlob = await response.blob();
+      }
+    } catch (e) {
+      console.log('Could not load image for DOCX');
+    }
+
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = docx;
+    
+    const sections = [];
+    
+    // Title
+    sections.push(new Paragraph({
+      text: `${recipe.emoji} ${recipe.title}`,
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: 200 }
+    }));
+
+    // Meta info
+    sections.push(new Paragraph({
+      text: `Servings: ${recipe.serves} | Prep: ${recipe.prep} | Cook: ${recipe.cook}`,
+      spacing: { after: 200 }
+    }));
+
+    // Description
+    sections.push(new Paragraph({
+      text: recipe.desc,
+      spacing: { after: 300 },
+      italics: true
+    }));
+
+    // Image if available
+    if (imageBlob) {
+      try {
+        const reader = new FileReader();
+        reader.onload = function() {
+          sections.splice(3, 0, new Paragraph({
+            text: '',
+            spacing: { after: 200 }
+          }));
+        };
+        reader.readAsArrayBuffer(imageBlob);
+      } catch (e) {
+        console.log('Image processing skipped');
+      }
+    }
+
+    // Ingredients
+    sections.push(new Paragraph({
+      text: 'Ingredients',
+      heading: HeadingLevel.HEADING_2,
+      spacing: { after: 100 }
+    }));
+    
+    recipe.ingredients.forEach(ing => {
+      sections.push(new Paragraph({
+        text: ing,
+        spacing: { after: 50 },
+        indent: { left: 720 }
+      }));
+    });
+    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+
+    // Directions
+    sections.push(new Paragraph({
+      text: 'Directions',
+      heading: HeadingLevel.HEADING_2,
+      spacing: { after: 100 }
+    }));
+    
+    recipe.directions.forEach((dir, idx) => {
+      sections.push(new Paragraph({
+        text: `${idx + 1}. ${dir}`,
+        spacing: { after: 50 },
+        indent: { left: 720 }
+      }));
+    });
+    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+
+    // Tips
+    sections.push(new Paragraph({
+      text: 'Tips & Mistakes to Avoid',
+      heading: HeadingLevel.HEADING_2,
+      spacing: { after: 100 }
+    }));
+    
+    recipe.tips.forEach(tip => {
+      sections.push(new Paragraph({
+        text: tip,
+        spacing: { after: 50 },
+        indent: { left: 720 }
+      }));
+    });
+    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+
+    // Serving suggestions
+    sections.push(new Paragraph({
+      text: 'Serving Suggestions',
+      heading: HeadingLevel.HEADING_2,
+      spacing: { after: 100 }
+    }));
+    
+    recipe.serve.forEach(srv => {
+      sections.push(new Paragraph({
+        text: srv,
+        spacing: { after: 50 },
+        indent: { left: 720 }
+      }));
+    });
+    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+
+    // Nutrition
+    sections.push(new Paragraph({
+      text: `Nutrition (Per Serving): Calories: ${recipe.cal} kcal | Protein: ${recipe.protein} | Fat: ${recipe.fat} | Carbs: ${recipe.carbs}`,
+      spacing: { after: 200 }
+    }));
+
+    const doc = new Document({ sections: [{ children: sections }] });
+    await Packer.toBlob(doc).then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${pageId}-${recipe.title}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    });
+  } catch (err) {
+    console.error('DOCX export error:', err);
+    alert('Failed to export DOCX. Please try again.');
+  }
+}
+
+async function downloadAllPDF() {
+  try {
+    document.getElementById('bulk-menu').classList.remove('active');
+    alert('Preparing PDF with all 80 recipes... This may take a minute.');
+    
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    let isFirstPage = true;
+
+    for (let i = 1; i <= 80; i++) {
+      const recipe = RECIPES[i - 1];
+      
+      if (!isFirstPage) {
+        pdf.addPage();
+      }
+      isFirstPage = false;
+
+      let yPos = 15;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Title
+      pdf.setFontSize(16);
+      pdf.setFont(undefined, 'bold');
+      pdf.text(`${recipe.emoji} ${recipe.title}`, margin, yPos);
+      yPos += 10;
+
+      // Meta
+      pdf.setFontSize(9);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Servings: ${recipe.serves} | Prep: ${recipe.prep} | Cook: ${recipe.cook}`, margin, yPos);
+      yPos += 7;
+
+      // Description
+      pdf.setFontSize(8);
+      const descLines = pdf.splitTextToSize(recipe.desc, contentWidth);
+      pdf.text(descLines, margin, yPos);
+      yPos += (descLines.length * 3) + 3;
+
+      // Check if we need a new page
+      if (yPos > pageHeight - 30) {
+        pdf.addPage();
+        yPos = 15;
+      }
+
+      // Ingredients
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Ingredients:', margin, yPos);
+      yPos += 5;
+      pdf.setFontSize(8);
+      pdf.setFont(undefined, 'normal');
+      
+      recipe.ingredients.forEach(ing => {
+        if (yPos > pageHeight - 15) {
+          pdf.addPage();
+          yPos = 15;
+        }
+        const ingLines = pdf.splitTextToSize(`• ${ing}`, contentWidth - 5);
+        pdf.text(ingLines, margin + 3, yPos);
+        yPos += (ingLines.length * 2.5);
+      });
+      yPos += 2;
+
+      // Directions
+      if (yPos > pageHeight - 25) {
+        pdf.addPage();
+        yPos = 15;
+      }
+      
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Directions:', margin, yPos);
+      yPos += 5;
+      pdf.setFontSize(8);
+      pdf.setFont(undefined, 'normal');
+      
+      recipe.directions.forEach((dir, idx) => {
+        if (yPos > pageHeight - 10) {
+          pdf.addPage();
+          yPos = 15;
+        }
+        const dirLines = pdf.splitTextToSize(`${idx + 1}. ${dir}`, contentWidth - 5);
+        pdf.text(dirLines, margin + 3, yPos);
+        yPos += (dirLines.length * 2.5);
+      });
+
+      // Nutrition
+      if (yPos > pageHeight - 15) {
+        pdf.addPage();
+        yPos = 15;
+      }
+      pdf.setFontSize(8);
+      pdf.setFont(undefined, 'italic');
+      const nutText = `Nutrition: ${recipe.cal} kcal | Protein: ${recipe.protein} | Fat: ${recipe.fat} | Carbs: ${recipe.carbs}`;
+      pdf.text(nutText, margin, yPos);
+    }
+
+    pdf.save('All-Recipes-Complete-Baking-Book.pdf');
+    alert('PDF downloaded successfully!');
+  } catch (err) {
+    console.error('Bulk PDF export error:', err);
+    alert('Failed to export bulk PDF. Please try again.');
+  }
+}
+
+async function downloadAllDOCX() {
+  try {
+    document.getElementById('bulk-menu').classList.remove('active');
+    alert('Preparing DOCX with all 80 recipes... This may take a minute.');
+    
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = docx;
+    const sections = [];
+
+    // Cover
+    sections.push(new Paragraph({
+      text: 'The Complete Baking & Desserts Book',
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: 100 }
+    }));
+    sections.push(new Paragraph({
+      text: 'A Professional Guide to Cakes, Pastries & Sweet Treats',
+      spacing: { after: 50 }
+    }));
+    sections.push(new Paragraph({
+      text: '80 Recipes | Step-by-Step Instructions | Nigerian & International Favourites',
+      spacing: { after: 400 }
+    }));
+
+    // Table of contents
+    sections.push(new Paragraph({
+      text: 'Table of Contents',
+      heading: HeadingLevel.HEADING_2,
+      spacing: { after: 200 }
+    }));
+
+    SECTIONS.forEach(sec => {
+      sections.push(new Paragraph({
+        text: sec.label,
+        heading: HeadingLevel.HEADING_3,
+        spacing: { after: 100 }
+      }));
+      
+      for (let i = sec.range[0]; i <= sec.range[1]; i++) {
+        const recipe = RECIPES[i - 1];
+        sections.push(new Paragraph({
+          text: `${i}. ${recipe.title}`,
+          spacing: { after: 50 },
+          indent: { left: 360 }
+        }));
+      }
+      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+    });
+
+    sections.push(new Paragraph({ text: "", pageBreakBefore: true }));
+
+    // All recipes
+    RECIPES.forEach((recipe, idx) => {
+      if (idx > 0) {
+        sections.push(new Paragraph({ text: "", pageBreakBefore: true }));
+      }
+
+      // Recipe title
+      sections.push(new Paragraph({
+        text: `${recipe.emoji} ${recipe.title}`,
+        heading: HeadingLevel.HEADING_1,
+        spacing: { after: 100 }
+      }));
+
+      // Meta
+      sections.push(new Paragraph({
+        text: `Servings: ${recipe.serves} | Prep Time: ${recipe.prep} | Cook Time: ${recipe.cook}`,
+        spacing: { after: 100 }
+      }));
+
+      // Description
+      sections.push(new Paragraph({
+        text: recipe.desc,
+        spacing: { after: 200 },
+        italics: true
+      }));
+
+      // Ingredients
+      sections.push(new Paragraph({
+        text: 'Ingredients',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { after: 100 }
+      }));
+      
+      recipe.ingredients.forEach(ing => {
+        sections.push(new Paragraph({
+          text: ing,
+          spacing: { after: 50 },
+          indent: { left: 720 }
+        }));
+      });
+      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+
+      // Directions
+      sections.push(new Paragraph({
+        text: 'Directions',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { after: 100 }
+      }));
+      
+      recipe.directions.forEach((dir, idx) => {
+        sections.push(new Paragraph({
+          text: `${idx + 1}. ${dir}`,
+          spacing: { after: 50 },
+          indent: { left: 720 }
+        }));
+      });
+      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+
+      // Tips
+      sections.push(new Paragraph({
+        text: 'Common Mistakes to Avoid',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { after: 100 }
+      }));
+      
+      recipe.tips.forEach(tip => {
+        sections.push(new Paragraph({
+          text: tip,
+          spacing: { after: 50 },
+          indent: { left: 720 }
+        }));
+      });
+      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+
+      // Serving
+      sections.push(new Paragraph({
+        text: 'Serving Suggestions',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { after: 100 }
+      }));
+      
+      recipe.serve.forEach(srv => {
+        sections.push(new Paragraph({
+          text: srv,
+          spacing: { after: 50 },
+          indent: { left: 720 }
+        }));
+      });
+      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+
+      // Nutrition
+      sections.push(new Paragraph({
+        text: `Nutrition (Per Serving): Calories: ${recipe.cal} kcal | Protein: ${recipe.protein} | Fat: ${recipe.fat} | Carbs: ${recipe.carbs}`,
+        spacing: { after: 100 },
+        italics: true
+      }));
+    });
+
+    const doc = new Document({ sections: [{ children: sections }] });
+    await Packer.toBlob(doc).then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'All-Recipes-Complete-Baking-Book.docx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    });
+    alert('DOCX downloaded successfully!');
+  } catch (err) {
+    console.error('Bulk DOCX export error:', err);
+    alert('Failed to export bulk DOCX. Please try again.');
+  }
+}
+</script>
+</body>
+</html>
+
+
+
+
+
