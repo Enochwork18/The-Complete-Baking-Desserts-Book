@@ -790,17 +790,18 @@ function jumpTo() {
 
 function getImagePath(recipeId) {
   // Overrides for files whose on-disk names don't match recipe titles or ids (case-sensitive)
+  // Normalized to kebab-case for production (Vercel) compatibility
   const OVERRIDES = {
-    10: '15. Lemon drizzle cake.jpg',
-    15: '15. Lemon drizzle cake.jpg',
-    12: '12. Cheesecake (baked).jpg',
-    27: '27. Puff puff (very popular in Nigeria).jpg',
-    28: '28. Buns (Nigerian style).jpg',
-    40: '40. Fish pie.jpg',
-    53: '53. Custard (Nigerian custard).jpg',
-    54: '54. Ice cream (basic vanilla).jpg',
-    64: '64. Crepes.jpg',
-    72: '72. Meat pie (classic version).jpg'
+    10: '15-lemon-drizzle-cake.jpg',
+    15: '15-lemon-drizzle-cake.jpg',
+    12: '12-cheesecake-baked.jpg',
+    27: '27-puff-puff-very-popular-in-nigeria.jpg',
+    28: '28-buns-nigerian-style.jpg',
+    40: '40-fish-pie.jpg',
+    53: '53-custard-nigerian.jpg',
+    54: '54-ice-cream-basic-vanilla.jpg',
+    64: '64-crepes.jpg',
+    72: '72-meat-pie-classic-version.jpg'
   };
   if (OVERRIDES[recipeId]) return OVERRIDES[recipeId];
   return `${recipeId}. ${RECIPES[recipeId - 1].title}.jpg`;
