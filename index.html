@@ -789,32 +789,21 @@ function jumpTo() {
 function getImagePath(recipeId) {
   // Centralized mapping for images where filenames do not match recipe titles/ids exactly
   const IMAGE_MAP = {
-    // Lemon Drizzle Cake (title id 10) uses file '15. Lemon drizzle cake.jpg'
     10: '15. Lemon drizzle cake.jpg',
-    // Baked Cheesecake
     12: '12. Cheesecake (baked).jpg',
-    // Lemon Drizzle Loaf (no separate loaf image available; reuse lemon drizzle cake image)
     15: '15. Lemon drizzle cake.jpg',
-    // Puff Puff
     27: '27. Puff puff (very popular in Nigeria).jpg',
-    // Nigerian Buns
     28: '28. Buns (Nigerian style).jpg',
-    // Fish Pie Puffs
     40: '40. Fish pie.jpg',
-    // Nigerian Custard
     53: '53. Custard (Nigerian custard).jpg',
-    // Basic Vanilla Ice Cream
     54: '54. Ice cream (basic vanilla).jpg',
-    // Crêpes
     64: '64. Crepes.jpg',
-    // Classic Meat Pie (Large)
     72: '72. Meat pie (classic version).jpg'
   };
 
-  if (IMAGE_MAP[recipeId]) return IMAGE_MAP[recipeId];
-
-  // Fallback to previous behavior for all other recipes
-  return `${recipeId}. ${RECIPES[recipeId - 1].title}.jpg`;
+  const filename = IMAGE_MAP[recipeId] || `${recipeId}. ${RECIPES[recipeId - 1].title}.jpg`;
+  // Use relative path and URL-encode filename for deployment compatibility
+  return './' + encodeURIComponent(filename);
 }
 
 function renderPage() {
