@@ -787,7 +787,7 @@ function jumpTo() {
 }
 
 function getImagePath(recipeId) {
-  // Centralized mapping for images where filenames do not match recipe titles/ids exactly
+  // Known overrides for problem cases
   const IMAGE_MAP = {
     10: '15. Lemon drizzle cake.jpg',
     12: '12. Cheesecake (baked).jpg',
@@ -801,9 +801,142 @@ function getImagePath(recipeId) {
     72: '72. Meat pie (classic version).jpg'
   };
 
-  const filename = IMAGE_MAP[recipeId] || `${recipeId}. ${RECIPES[recipeId - 1].title}.jpg`;
-  // Use relative path and URL-encode filename for deployment compatibility
-  return './' + encodeURIComponent(filename);
+  // All image assets present in the repo (kept relative to root)
+  const AVAILABLE_IMAGES = [
+    "🧁 CUPCAKES & SMALL CAKES.jpg",
+    "🥧 PIES & TARTS.jpg",
+    "🥞 BREAKFAST  LIGHT TREATS.jpg",
+    "🥕 Carrot Cake.jpg",
+    "🥐 PASTRIES (BAKERY FAVORITES).jpg",
+    "🍰 CAKES.jpg",
+    "🍮 DESSERTS (SPOONABLE & FANCY).jpg",
+    "🍫 NO-BAKE & QUICK DESSERTS.jpg",
+    "🍪 COOKIES & BISCUITS.jpg",
+    "🍩 DOUGH-BASED TREATS.jpg",
+    "❤️ Red Velvet Cake.jpg",
+    "✨ New Limited Edition Scents Just Dropped! ✨__🍫 Minty Hot Chocolate – cozy cocoa + cool peppermint_🌿 Ginger Sorbet – bright, zesty, refreshing_🍁 Maple Syrup – warm, golden, and oh-so sweet_🌲 Evergre.jpg",
+    "9. Coconut cake.jpg",
+    "80. Peanut brittle.jpg",
+    "8. Pound cake.jpg",
+    "79. Toffee.jpg",
+    "78. Chocolate sauce.jpg",
+    "77. Caramel sauce.jpg",
+    "76. Fruit tart.jpg",
+    "75. Chocolate tart.jpg",
+    "74. Lemon tart.jpg",
+    "73. Pumpkin pie.jpg",
+    "72. Meat pie (classic version).jpg",
+    "71. Apple pie.jpg",
+    "70. Biscuit cake.jpg",
+    "7. Butter cake.jpg",
+    "69. Energy balls.jpg",
+    "68. No-bake chocolate bars.jpg",
+    "67. Rocky road.jpg",
+    "66. Chocolate fudge.jpg",
+    "65. Banana pancakes.jpg",
+    "64. Crepes.jpg",
+    "63. French toast.jpg",
+    "62. Waffles.jpg",
+    "61. Pancakes.jpg",
+    "60. Crème caramel.jpg",
+    "6. Marble cake.jpg",
+    "59. Bread pudding.jpg",
+    "58. Rice pudding.jpg",
+    "57. Trifle.jpg",
+    "56. Fruit salad with cream.jpg",
+    "55. Chocolate ice cream.jpg",
+    "54. Ice cream (basic vanilla).jpg",
+    "53. Custard (Nigerian custard).jpg",
+    "52. Vanilla pudding.jpg",
+    "51. Chocolate mousse.jpg",
+    "50. Snickerdoodles.jpg",
+    "5. Banana cake.jpg",
+    "49. Butter cookies.jpg",
+    "48. Coconut cookies.jpg",
+    "47. Double chocolate cookies.jpg",
+    "46. Gingerbread cookies.jpg",
+    "45. Shortbread biscuits.jpg",
+    "44. Oatmeal cookies.jpg",
+    "43. Peanut butter cookies.jpg",
+    "42. Sugar cookies.jpg",
+    "41. Chocolate chip cookies.jpg",
+    "40. Fish pie.jpg",
+    "4. Carrot cake.jpg",
+    "39. Beef pie.jpg",
+    "38. Apple turnover.jpg",
+    "37. Sausage rolls.jpg",
+    "36. Chicken pie.jpg",
+    "35. Meat pie.jpg",
+    "34. Puff pastry.jpg",
+    "33. Danish pastries.jpg",
+    "32. Chocolate croissants.jpg",
+    "31. Croissants.jpg",
+    "30. Soft pretzels.jpg",
+    "3. Red velvet cake.jpg",
+    "29. Cinnamon rolls.jpg",
+    "28. Buns (Nigerian style).jpg",
+    "27. Puff puff (very popular in Nigeria).jpg",
+    "26. Jam-filled doughnuts.jpg",
+    "25. Glazed doughnuts.jpg",
+    "24. Classic doughnuts.jpg",
+    "23. Funfetti cupcakes.jpg",
+    "22. Coconut cupcakes.jpg",
+    "21. Lemon cupcakes.jpg",
+    "20. Carrot cupcakes.jpg",
+    "2. Chocolate cake.jpg",
+    "19. Banana cupcakes.jpg",
+    "18. Red velvet cupcakes.jpg",
+    "17. Chocolate cupcakes.jpg",
+    "16. Vanilla cupcakes.jpg",
+    "15. Lemon drizzle cake.jpg",
+    "14. Strawberry cake.jpg",
+    "13. No-bake cheesecake.jpg",
+    "12. Cheesecake (baked).jpg",
+    "11. Black forest cake.jpg",
+    "10. Pineapple upside-down cake.jpg",
+    "10 Mixed Fruit Dessert Recipes for Fresh Colorful Seasonal Treats.jpg",
+    "1. Vanilla sponge cake.jpg"
+  ];
+
+  function removePrefixAndExt(name) {
+    return name.replace(/^\d+\.\s*/, '').replace(/\.[^/.]+$/, '');
+  }
+  function normalize(s) {
+    try {
+      return s.toString().toLowerCase().normalize('NFD').replace(/[ -]/g, '').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    } catch (e) {
+      return s.toString().toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+  }
+
+  const title = RECIPES[recipeId - 1].title;
+  const normTitle = normalize(title);
+
+  // 1) explicit override
+  if (IMAGE_MAP[recipeId]) return './' + encodeURIComponent(IMAGE_MAP[recipeId]);
+
+  // 2) by numeric prefix (fast)
+  const byPrefix = AVAILABLE_IMAGES.find(f => new RegExp('^' + recipeId + '\\.(\\s|\S)').test(f));
+  if (byPrefix) return './' + encodeURIComponent(byPrefix);
+
+  // 3) exact normalized match
+  for (const f of AVAILABLE_IMAGES) {
+    const name = removePrefixAndExt(f);
+    if (normalize(name) === normTitle) return './' + encodeURIComponent(f);
+  }
+
+  // 4) all title words present in filename
+  const words = normTitle.split(' ').filter(Boolean);
+  for (const f of AVAILABLE_IMAGES) {
+    const name = removePrefixAndExt(f);
+    const normName = normalize(name);
+    const allWords = words.every(w => normName.includes(w));
+    if (allWords && words.length>0) return './' + encodeURIComponent(f);
+  }
+
+  // Fallback: use best-effort numbered filename (URL-encoded)
+  const fallback = `${recipeId}. ${RECIPES[recipeId - 1].title}.jpg`;
+  return './' + encodeURIComponent(fallback);
 }
 
 function renderPage() {
