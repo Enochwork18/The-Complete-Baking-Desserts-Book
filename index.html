@@ -804,6 +804,61 @@ function getImagePath(recipeId){
   const fname = (r.id ? (r.id + '-' + base) : base) + '.jpg';
   return 'images/' + fname;
 }
+
+// Robust image loader: given an <img> element and recipe info, try a list of candidate URLs sequentially
+async function setImageWithCandidates(imgEl, recipeId, title){
+  if(!imgEl) return;
+  const norm = normalizeFilename(title);
+  const candidates = [];
+  candidates.push(`images/${recipeId}-${norm}.jpg`);
+  candidates.push(`images/${norm}.jpg`);
+  // Try numeric prefixes (1..80) in case the image file still uses a different numeric index
+  for(let i=1;i<=80;i++){
+    const s = `images/${i}-${norm}.jpg`;
+    if(!candidates.includes(s)) candidates.push(s);
+  }
+  candidates.push('images/placeholder.svg');
+
+  let idx = 0;
+  async function tryNext(){
+    if(idx >= candidates.length) return;
+    const url = candidates[idx++];
+    try{
+      // Use HEAD fetch where supported; fallback to GET if HEAD not allowed
+      const res = await fetch(url, { method: 'HEAD' });
+      if(res && res.ok && res.headers.get('content-type') && res.headers.get('content-type').startsWith('image')){
+        imgEl.src = url;
+        return;
+      }
+    }catch(e){
+      // HEAD may be blocked; try GET
+      try{
+        const r2 = await fetch(url, { method: 'GET' });
+        if(r2 && r2.ok && r2.headers.get('content-type') && r2.headers.get('content-type').startsWith('image')){
+          imgEl.src = url;
+          return;
+        }
+      }catch(e2){
+        // continue to next
+      }
+    }
+    // not found, log and try next
+    console.warn('Image candidate not found:', url);
+    await tryNext();
+  }
+  tryNext();
+}
+
+// Attach a generic onerror handler to swap to placeholder if unexpected error occurs
+function attachImgFallback(imgEl){
+  if(!imgEl) return;
+  imgEl.onerror = function(){
+    if(imgEl.dataset.fallbackDone) return;
+    imgEl.dataset.fallbackDone = '1';
+    console.warn('Image failed to load, swapping to placeholder:', imgEl.src);
+    imgEl.src = 'images/placeholder.svg';
+  };
+}
 function renderPage() {
   const r = RECIPES[currentPage - 1];
   document.getElementById('page-info').textContent = `Recipe ${r.id} of 80 — ${r.cat}`;
@@ -813,6 +868,11 @@ function renderPage() {
   const imgPath = getImagePath(r.id);
 
   const ingHTML = r.ingredients.map(i => `<li>${i}</li>`).join('');
+
+  // After rendering HTML, we'll set the image source using a robust candidate loader that
+  // attempts several production-safe filenames (id-norm, norm, and numbered prefixes) and
+  // falls back to images/placeholder.svg if none are found. This prevents case/casing/numbering issues on Vercel.
+
   const dirHTML = r.directions.map((d,i) => `<li>${d}</li>`).join('');
   const tipHTML = r.tips.map(t => `<li>${t}</li>`).join('');
   const serveHTML = r.serve.map(s => `<li>${s}</li>`).join('');
@@ -838,7 +898,7 @@ function renderPage() {
     <div class="desc-strip">${r.desc}</div>
     <div class="recipe-body">
       <div class="recipe-img">
-        <img src="${imgPath}" alt="${r.title}" onerror="(function(img,fn){console.warn('Image failed to load:', fn); if(img.dataset.fallbackDone){ img.style.display='none'; return; } img.dataset.fallbackDone = '1'; img.src='images/placeholder.svg'; })(this, '${imgPath}')">
+        <img data-initial-src="${imgPath}" alt="${r.title}" />
       </div>
       <div class="ingredients-col">
         <h3>Ingredients</h3>
@@ -887,6 +947,13 @@ function renderPage() {
 
   // After rendering, populate variations fields from localStorage
   try{ loadVariations(r.id); }catch(e){console.warn('Variations load error',e)}
+
+  // Set image source robustly
+  try{
+    const imgEl = document.querySelector('#recipe-page .recipe-img img');
+    attachImgFallback(imgEl);
+    setImageWithCandidates(imgEl, r.id, r.title);
+  }catch(e){ console.warn('Image setup error', e); }
 }
 
 buildToc();
