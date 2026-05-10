@@ -841,7 +841,7 @@ function renderPage() {
     <div class="desc-strip">${r.desc}</div>
     <div class="recipe-body">
       <div class="recipe-img">
-        <img src="${imgPath}" alt="${r.title}" onerror="this.parentElement.innerHTML='<div class=placeholder>🖼️</div>'">
+        <img src="${imgPath}" alt="${r.title}" onerror="(function(img,fn){console.warn('Image failed to load:', fn); if(img.dataset.fallbackDone){ img.style.display='none'; return; } img.dataset.fallbackDone = '1'; img.src='images/placeholder.svg'; })(this, '${imgPath}')">
       </div>
       <div class="ingredients-col">
         <h3>Ingredients</h3>
