@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Lato',sans-serif;background:#f5f0eb;color:#222;min-height:100vh}
@@ -881,6 +882,155 @@ function renderPage() {
   `;
 }
 
+ensureVariations();
+
+function ensureVariations(){
+  // Add a safe, optional variations object to every recipe without changing UI
+  RECIPES.forEach(r => {
+    if (!r.variations) {
+      r.variations = {
+        sizes: ['Small','Medium','Large'],
+        flavors: [],
+        addons: []
+      };
+    }
+  });
+}
+
+// Build a DOCX document that contains both human-readable sections and a machine-readable JSON blob
+function buildDocxForRecipes(recipes) {
+  const { Document, Paragraph, TextRun, HeadingLevel } = docx;
+  const children = [];
+
+  // Cover
+  children.push(new Paragraph({ text: 'The Complete Baking & Desserts Book', heading: HeadingLevel.HEADING_1, spacing: { after: 300 } }));
+  children.push(new Paragraph({ text: 'A Professional Guide to Cakes, Pastries & Sweet Treats', spacing: { after: 100 } }));
+  children.push(new Paragraph({ text: '80 Recipes | Step-by-Step Instructions | Nigerian & International Favourites', spacing: { after: 300 } }));
+
+  // Embed a machine-readable JSON blob so re-import is reliable
+  try {
+    const json = JSON.stringify(recipes, null, 2);
+    children.push(new Paragraph({ text: '---RECIPE-JSON-START---', spacing: { after: 50 } }));
+    // break JSON into lines to avoid very long single paragraph
+    json.split('\n').forEach(line => children.push(new Paragraph({ text: line })));
+    children.push(new Paragraph({ text: '---RECIPE-JSON-END---', spacing: { after: 200 } }));
+  } catch (e) {
+    // fall back to textual export if JSON fails
+    console.warn('Could not embed JSON in DOCX', e);
+  }
+
+  // Human-readable recipes (keeps existing structure but adds clear markers for parsing)
+  recipes.forEach((recipe, idx) => {
+    if (idx > 0) children.push(new Paragraph({ text: '', pageBreakBefore: true }));
+
+    children.push(new Paragraph({ text: '---RECIPE-START---', spacing: { after: 50 } }));
+    children.push(new Paragraph({ text: `ID: ${recipe.id}` }));
+    children.push(new Paragraph({ text: `Title: ${recipe.title}` }));
+    children.push(new Paragraph({ text: `Emoji: ${recipe.emoji}` }));
+    children.push(new Paragraph({ text: `Category: ${recipe.cat}` }));
+    children.push(new Paragraph({ text: `Serves: ${recipe.serves}` }));
+    children.push(new Paragraph({ text: `Prep: ${recipe.prep}` }));
+    children.push(new Paragraph({ text: `Cook: ${recipe.cook}` }));
+    children.push(new Paragraph({ text: `Desc: ${recipe.desc}`, spacing: { after: 100 } }));
+
+    // Variations
+    children.push(new Paragraph({ text: 'Variations:' }));
+    if (recipe.variations) {
+      children.push(new Paragraph({ text: `Sizes: ${Array.isArray(recipe.variations.sizes)?recipe.variations.sizes.join('|'):''}` }));
+      children.push(new Paragraph({ text: `Flavors: ${Array.isArray(recipe.variations.flavors)?recipe.variations.flavors.join('|'):''}` }));
+      children.push(new Paragraph({ text: `Addons: ${Array.isArray(recipe.variations.addons)?recipe.variations.addons.join('|'):''}`, spacing:{ after: 50 } }));
+    }
+
+    // Ingredients
+    children.push(new Paragraph({ text: 'Ingredients:' }));
+    recipe.ingredients.forEach(ing => children.push(new Paragraph({ text: `- ${ing}` })));
+    children.push(new Paragraph({ text: '', spacing:{ after: 20 } }));
+
+    // Directions
+    children.push(new Paragraph({ text: 'Directions:' }));
+    recipe.directions.forEach((d,i) => children.push(new Paragraph({ text: `${i+1}. ${d}` })));
+    children.push(new Paragraph({ text: '', spacing:{ after: 20 } }));
+
+    // Tips & Serving
+    children.push(new Paragraph({ text: 'Tips:' }));
+    recipe.tips.forEach(t => children.push(new Paragraph({ text: `- ${t}` })));
+    children.push(new Paragraph({ text: 'Serving:' }));
+    recipe.serve.forEach(s => children.push(new Paragraph({ text: `- ${s}` })));
+
+    children.push(new Paragraph({ text: `Nutrition: ${recipe.cal} kcal | Protein: ${recipe.protein} | Fat: ${recipe.fat} | Carbs: ${recipe.carbs}`, spacing:{ after: 50 } }));
+    children.push(new Paragraph({ text: '---RECIPE-END---', spacing: { after: 100 } }));
+  });
+
+  return new Document({ sections: [{ children }] });
+}
+
+// Extraction: read uploaded .docx, prefer embedded JSON blob, fallback to marker parsing
+async function extractRecipesFromDocxFile(file) {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const docXml = await zip.file('word/document.xml').async('string');
+
+    // Collapse XML to plain text content
+    let text = docXml.replace(/<w:t[^>]*>/g, '').replace(/<[^>]+>/g, '\n').replace(/&amp;/g, '&');
+
+    // First try to find JSON blob
+    const jsonMatch = text.match(/---RECIPE-JSON-START---([\s\S]*?)---RECIPE-JSON-END---/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        return parsed;
+      } catch (e) {
+        console.warn('Failed to parse embedded JSON, falling back to marker parsing', e);
+      }
+    }
+
+    // Fallback: parse recipe markers
+    const recipes = [];
+    const re = /---RECIPE-START---([\s\S]*?)---RECIPE-END---/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const block = m[1];
+      const lines = block.split(/\r?\n/).map(s => s.replace(/^[\-•\s]+/, '').trim()).filter(Boolean);
+      const recipe = { ingredients: [], directions: [], tips: [], serve: [] };
+      let section = null;
+      lines.forEach(l => {
+        if (l.startsWith('ID:')) recipe.id = parseInt(l.replace('ID:', '').trim());
+        else if (l.startsWith('Title:')) recipe.title = l.replace('Title:', '').trim();
+        else if (l.startsWith('Emoji:')) recipe.emoji = l.replace('Emoji:', '').trim();
+        else if (l.startsWith('Category:')) recipe.cat = l.replace('Category:', '').trim();
+        else if (l.startsWith('Serves:')) recipe.serves = l.replace('Serves:', '').trim();
+        else if (l.startsWith('Prep:')) recipe.prep = l.replace('Prep:', '').trim();
+        else if (l.startsWith('Cook:')) recipe.cook = l.replace('Cook:', '').trim();
+        else if (l.startsWith('Desc:')) recipe.desc = l.replace('Desc:', '').trim();
+        else if (l.startsWith('Variations:')) section = 'variations';
+        else if (l.startsWith('Sizes:')) recipe.variations = recipe.variations || {}, recipe.variations.sizes = l.replace('Sizes:', '').trim().split('|').map(s=>s.trim()).filter(Boolean);
+        else if (l.startsWith('Flavors:')) recipe.variations = recipe.variations || {}, recipe.variations.flavors = l.replace('Flavors:', '').trim().split('|').map(s=>s.trim()).filter(Boolean);
+        else if (l.startsWith('Addons:')) recipe.variations = recipe.variations || {}, recipe.variations.addons = l.replace('Addons:', '').trim().split('|').map(s=>s.trim()).filter(Boolean);
+        else if (l.startsWith('Ingredients:')) section = 'ingredients';
+        else if (l.startsWith('Directions:')) section = 'directions';
+        else if (l.startsWith('Tips:')) section = 'tips';
+        else if (l.startsWith('Serving:')) section = 'serve';
+        else if (/^\d+\./.test(l)) {
+          recipe.directions.push(l.replace(/^\d+\./,'').trim());
+        } else {
+          if (section === 'ingredients') recipe.ingredients.push(l.replace(/^-\s*/,'').trim());
+          else if (section === 'tips') recipe.tips.push(l.replace(/^-\s*/,'').trim());
+          else if (section === 'serve') recipe.serve.push(l.replace(/^-\s*/,'').trim());
+        }
+      });
+      recipes.push(recipe);
+    }
+    return recipes;
+  } catch (err) {
+    console.error('DOCX extraction error', err);
+    throw err;
+  }
+}
+
+// expose extraction helper globally (no UI added)
+window.extractRecipesFromDocxFile = extractRecipesFromDocxFile;
+
 buildToc();
 // Add click-to-go on cover title for quick access
 document.querySelector('.cover').onclick = null;
@@ -921,139 +1071,18 @@ async function downloadPagePDF(pageId) {
 async function downloadPageDOCX(pageId) {
   try {
     const recipe = RECIPES[pageId - 1];
-    const imgPath = getImagePath(pageId);
-    
-    let imageBlob = null;
-    try {
-      const response = await fetch(imgPath);
-      if (response.ok) {
-        imageBlob = await response.blob();
-      }
-    } catch (e) {
-      console.log('Could not load image for DOCX');
-    }
-
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = docx;
-    
-    const sections = [];
-    
-    // Title
-    sections.push(new Paragraph({
-      text: `${recipe.emoji} ${recipe.title}`,
-      heading: HeadingLevel.HEADING_1,
-      spacing: { after: 200 }
-    }));
-
-    // Meta info
-    sections.push(new Paragraph({
-      text: `Servings: ${recipe.serves} | Prep: ${recipe.prep} | Cook: ${recipe.cook}`,
-      spacing: { after: 200 }
-    }));
-
-    // Description
-    sections.push(new Paragraph({
-      text: recipe.desc,
-      spacing: { after: 300 },
-      italics: true
-    }));
-
-    // Image if available
-    if (imageBlob) {
-      try {
-        const reader = new FileReader();
-        reader.onload = function() {
-          sections.splice(3, 0, new Paragraph({
-            text: '',
-            spacing: { after: 200 }
-          }));
-        };
-        reader.readAsArrayBuffer(imageBlob);
-      } catch (e) {
-        console.log('Image processing skipped');
-      }
-    }
-
-    // Ingredients
-    sections.push(new Paragraph({
-      text: 'Ingredients',
-      heading: HeadingLevel.HEADING_2,
-      spacing: { after: 100 }
-    }));
-    
-    recipe.ingredients.forEach(ing => {
-      sections.push(new Paragraph({
-        text: ing,
-        spacing: { after: 50 },
-        indent: { left: 720 }
-      }));
-    });
-    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
-
-    // Directions
-    sections.push(new Paragraph({
-      text: 'Directions',
-      heading: HeadingLevel.HEADING_2,
-      spacing: { after: 100 }
-    }));
-    
-    recipe.directions.forEach((dir, idx) => {
-      sections.push(new Paragraph({
-        text: `${idx + 1}. ${dir}`,
-        spacing: { after: 50 },
-        indent: { left: 720 }
-      }));
-    });
-    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
-
-    // Tips
-    sections.push(new Paragraph({
-      text: 'Tips & Mistakes to Avoid',
-      heading: HeadingLevel.HEADING_2,
-      spacing: { after: 100 }
-    }));
-    
-    recipe.tips.forEach(tip => {
-      sections.push(new Paragraph({
-        text: tip,
-        spacing: { after: 50 },
-        indent: { left: 720 }
-      }));
-    });
-    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
-
-    // Serving suggestions
-    sections.push(new Paragraph({
-      text: 'Serving Suggestions',
-      heading: HeadingLevel.HEADING_2,
-      spacing: { after: 100 }
-    }));
-    
-    recipe.serve.forEach(srv => {
-      sections.push(new Paragraph({
-        text: srv,
-        spacing: { after: 50 },
-        indent: { left: 720 }
-      }));
-    });
-    sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
-
-    // Nutrition
-    sections.push(new Paragraph({
-      text: `Nutrition (Per Serving): Calories: ${recipe.cal} kcal | Protein: ${recipe.protein} | Fat: ${recipe.fat} | Carbs: ${recipe.carbs}`,
-      spacing: { after: 200 }
-    }));
-
-    const doc = new Document({ sections: [{ children: sections }] });
-    await Packer.toBlob(doc).then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${pageId}-${recipe.title}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    });
+    ensureVariations();
+    const doc = buildDocxForRecipes([recipe]);
+    const { Packer } = docx;
+    const blob = await Packer.toBlob(doc);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${pageId}-${recipe.title}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   } catch (err) {
     console.error('DOCX export error:', err);
     alert('Failed to export DOCX. Please try again.');
@@ -1172,161 +1201,18 @@ async function downloadAllDOCX() {
   try {
     document.getElementById('bulk-menu').classList.remove('active');
     alert('Preparing DOCX with all 80 recipes... This may take a minute.');
-    
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = docx;
-    const sections = [];
-
-    // Cover
-    sections.push(new Paragraph({
-      text: 'The Complete Baking & Desserts Book',
-      heading: HeadingLevel.HEADING_1,
-      spacing: { after: 100 }
-    }));
-    sections.push(new Paragraph({
-      text: 'A Professional Guide to Cakes, Pastries & Sweet Treats',
-      spacing: { after: 50 }
-    }));
-    sections.push(new Paragraph({
-      text: '80 Recipes | Step-by-Step Instructions | Nigerian & International Favourites',
-      spacing: { after: 400 }
-    }));
-
-    // Table of contents
-    sections.push(new Paragraph({
-      text: 'Table of Contents',
-      heading: HeadingLevel.HEADING_2,
-      spacing: { after: 200 }
-    }));
-
-    SECTIONS.forEach(sec => {
-      sections.push(new Paragraph({
-        text: sec.label,
-        heading: HeadingLevel.HEADING_3,
-        spacing: { after: 100 }
-      }));
-      
-      for (let i = sec.range[0]; i <= sec.range[1]; i++) {
-        const recipe = RECIPES[i - 1];
-        sections.push(new Paragraph({
-          text: `${i}. ${recipe.title}`,
-          spacing: { after: 50 },
-          indent: { left: 360 }
-        }));
-      }
-      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
-    });
-
-    sections.push(new Paragraph({ text: "", pageBreakBefore: true }));
-
-    // All recipes
-    RECIPES.forEach((recipe, idx) => {
-      if (idx > 0) {
-        sections.push(new Paragraph({ text: "", pageBreakBefore: true }));
-      }
-
-      // Recipe title
-      sections.push(new Paragraph({
-        text: `${recipe.emoji} ${recipe.title}`,
-        heading: HeadingLevel.HEADING_1,
-        spacing: { after: 100 }
-      }));
-
-      // Meta
-      sections.push(new Paragraph({
-        text: `Servings: ${recipe.serves} | Prep Time: ${recipe.prep} | Cook Time: ${recipe.cook}`,
-        spacing: { after: 100 }
-      }));
-
-      // Description
-      sections.push(new Paragraph({
-        text: recipe.desc,
-        spacing: { after: 200 },
-        italics: true
-      }));
-
-      // Ingredients
-      sections.push(new Paragraph({
-        text: 'Ingredients',
-        heading: HeadingLevel.HEADING_2,
-        spacing: { after: 100 }
-      }));
-      
-      recipe.ingredients.forEach(ing => {
-        sections.push(new Paragraph({
-          text: ing,
-          spacing: { after: 50 },
-          indent: { left: 720 }
-        }));
-      });
-      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
-
-      // Directions
-      sections.push(new Paragraph({
-        text: 'Directions',
-        heading: HeadingLevel.HEADING_2,
-        spacing: { after: 100 }
-      }));
-      
-      recipe.directions.forEach((dir, idx) => {
-        sections.push(new Paragraph({
-          text: `${idx + 1}. ${dir}`,
-          spacing: { after: 50 },
-          indent: { left: 720 }
-        }));
-      });
-      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
-
-      // Tips
-      sections.push(new Paragraph({
-        text: 'Common Mistakes to Avoid',
-        heading: HeadingLevel.HEADING_2,
-        spacing: { after: 100 }
-      }));
-      
-      recipe.tips.forEach(tip => {
-        sections.push(new Paragraph({
-          text: tip,
-          spacing: { after: 50 },
-          indent: { left: 720 }
-        }));
-      });
-      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
-
-      // Serving
-      sections.push(new Paragraph({
-        text: 'Serving Suggestions',
-        heading: HeadingLevel.HEADING_2,
-        spacing: { after: 100 }
-      }));
-      
-      recipe.serve.forEach(srv => {
-        sections.push(new Paragraph({
-          text: srv,
-          spacing: { after: 50 },
-          indent: { left: 720 }
-        }));
-      });
-      sections.push(new Paragraph({ text: '', spacing: { after: 100 } }));
-
-      // Nutrition
-      sections.push(new Paragraph({
-        text: `Nutrition (Per Serving): Calories: ${recipe.cal} kcal | Protein: ${recipe.protein} | Fat: ${recipe.fat} | Carbs: ${recipe.carbs}`,
-        spacing: { after: 100 },
-        italics: true
-      }));
-    });
-
-    const doc = new Document({ sections: [{ children: sections }] });
-    await Packer.toBlob(doc).then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'All-Recipes-Complete-Baking-Book.docx';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    });
+    ensureVariations();
+    const doc = buildDocxForRecipes(RECIPES);
+    const { Packer } = docx;
+    const blob = await Packer.toBlob(doc);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'All-Recipes-Complete-Baking-Book.docx';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
     alert('DOCX downloaded successfully!');
   } catch (err) {
     console.error('Bulk DOCX export error:', err);
