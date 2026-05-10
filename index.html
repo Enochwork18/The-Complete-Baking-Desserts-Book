@@ -849,6 +849,23 @@ function renderPage() {
         <ol>${dirHTML}</ol>
       </div>
     </div>
+    <!-- Variations (editable, saved to localStorage) -->
+    <div class="variations-block" style="margin-top:12px;border:1px dashed #eee;padding:12px;border-radius:6px">
+      <h4 style="margin:0 0 8px 0">🔧 Variations (optional)</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="var-size-${r.id}" placeholder="Size (e.g., Small / Medium / Large)" style="flex:1;min-width:160px;padding:8px" />
+        <input id="var-flavor-${r.id}" placeholder="Flavor (e.g., Vanilla, Chocolate)" style="flex:1;min-width:160px;padding:8px" />
+        <input id="var-addons-${r.id}" placeholder="Add-ons (comma separated)" style="flex:1;min-width:160px;padding:8px" />
+      </div>
+      <div style="margin-top:8px">
+        <textarea id="var-notes-${r.id}" placeholder="Notes / Custom variation text" style="width:100%;height:80px;padding:8px"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button onclick="clearVariations(${r.id})" style="padding:8px 12px">Clear</button>
+        <button onclick="saveVariations(${r.id})" style="padding:8px 12px;background:#2ecc71;color:#fff;border:none;border-radius:4px">Save Variations</button>
+      </div>
+    </div>
+
     <div class="recipe-footer">
       <div class="footer-block tips">
         <h4>⚠ Common Mistakes to Avoid</h4>
@@ -867,11 +884,59 @@ function renderPage() {
       Carbs: <span>${r.carbs}</span>
     </div>
   `;
+
+  // After rendering, populate variations fields from localStorage
+  try{ loadVariations(r.id); }catch(e){console.warn('Variations load error',e)}
 }
 
 buildToc();
 // Add click-to-go on cover title for quick access
 document.querySelector('.cover').onclick = null;
+
+// ═══════════════════════════════════════════════════════════════
+// VARIATIONS STORAGE HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function saveVariations(recipeId){
+  try{
+    const key = `variations_${recipeId}`;
+    const obj = {
+      size: document.getElementById(`var-size-${recipeId}`).value.trim(),
+      flavor: document.getElementById(`var-flavor-${recipeId}`).value.trim(),
+      addons: document.getElementById(`var-addons-${recipeId}`).value.trim(),
+      notes: document.getElementById(`var-notes-${recipeId}`).value.trim(),
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(key, JSON.stringify(obj));
+    alert('Variations saved locally.');
+  }catch(e){ console.error('Save variations error',e); alert('Failed to save variations'); }
+}
+
+function loadVariations(recipeId){
+  try{
+    const key = `variations_${recipeId}`;
+    const raw = localStorage.getItem(key);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    const elSize = document.getElementById(`var-size-${recipeId}`);
+    if(elSize) elSize.value = obj.size || '';
+    const elFlavor = document.getElementById(`var-flavor-${recipeId}`);
+    if(elFlavor) elFlavor.value = obj.flavor || '';
+    const elAddons = document.getElementById(`var-addons-${recipeId}`);
+    if(elAddons) elAddons.value = obj.addons || '';
+    const elNotes = document.getElementById(`var-notes-${recipeId}`);
+    if(elNotes) elNotes.value = obj.notes || '';
+  }catch(e){ console.error('Load variations error',e); }
+}
+
+function clearVariations(recipeId){
+  try{
+    if(!confirm('Clear saved variations for this recipe?')) return;
+    const key = `variations_${recipeId}`;
+    localStorage.removeItem(key);
+    loadVariations(recipeId);
+  }catch(e){ console.error('Clear variations error',e); }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // EXPORT FUNCTIONS
