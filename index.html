@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.16/mammoth.browser.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Lato',sans-serif;background:#f5f0eb;color:#222;min-height:100vh}
@@ -121,6 +122,8 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:16px">
         <h2 style="margin:0;flex-grow:1">Table of Contents</h2>
         <div class="header-actions">
+          <input id="docx-import" type="file" accept=".docx" style="display:none" />
+          <button class="bulk-menu-btn" onclick="document.getElementById('docx-import').click()" title="Import DOCX">📂 Import DOCX</button>
           <button class="bulk-menu-btn" id="bulk-btn" onclick="toggleBulkMenu()" title="Download all recipes">📥 Download All</button>
           <div class="bulk-menu" id="bulk-menu">
             <div class="bulk-menu-item" onclick="downloadAllPDF()" style="cursor:pointer">
@@ -786,6 +789,20 @@ function jumpTo() {
 }
 
 function getImagePath(recipeId) {
+  // Overrides for files whose on-disk names don't match recipe titles or ids (case-sensitive)
+  const OVERRIDES = {
+    10: '15. Lemon drizzle cake.jpg',
+    15: '15. Lemon drizzle cake.jpg',
+    12: '12. Cheesecake (baked).jpg',
+    27: '27. Puff puff (very popular in Nigeria).jpg',
+    28: '28. Buns (Nigerian style).jpg',
+    40: '40. Fish pie.jpg',
+    53: '53. Custard (Nigerian custard).jpg',
+    54: '54. Ice cream (basic vanilla).jpg',
+    64: '64. Crepes.jpg',
+    72: '72. Meat pie (classic version).jpg'
+  };
+  if (OVERRIDES[recipeId]) return OVERRIDES[recipeId];
   return `${recipeId}. ${RECIPES[recipeId - 1].title}.jpg`;
 }
 
@@ -1306,6 +1323,94 @@ async function downloadAllDOCX() {
     alert('Failed to export bulk DOCX. Please try again.');
   }
 }
+
+
+// DOCX Import handler
+const docxInput = document.getElementById('docx-import');
+docxInput && docxInput.addEventListener('change', async function(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    // Use mammoth to convert to HTML, then simple extraction
+    const result = await mammoth.convertToHtml({ arrayBuffer });
+    const html = result.value; // HTML string
+    // Basic extraction: look for headings and paragraphs
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    // Try to extract first heading as title and following paragraphs as description
+    const titleEl = temp.querySelector('h1, h2, h3, strong, b');
+    const title = titleEl ? titleEl.textContent.trim() : 'Imported Recipe';
+    const paras = Array.from(temp.querySelectorAll('p')).map(p => p.textContent.trim()).filter(Boolean);
+    const desc = paras.slice(0,2).join('\n\n') || '';
+
+    // Create a simple editable modal (non-intrusive) to let user edit before integrating
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.left = 0;
+    overlay.style.top = 0;
+    overlay.style.right = 0;
+    overlay.style.bottom = 0;
+    overlay.style.background = 'rgba(0,0,0,0.4)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = 9999;
+
+    const box = document.createElement('div');
+    box.style.background = '#fff';
+    box.style.padding = '20px';
+    box.style.maxWidth = '720px';
+    box.style.width = '100%';
+    box.style.borderRadius = '8px';
+    box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+
+    box.innerHTML = `
+      <h3 style="margin-top:0">Import: Edit Extracted Data</h3>
+      <label>Title</label>
+      <input id="imp-title" style="width:100%;padding:8px;margin-bottom:8px" value="${title.replace(/"/g,'&quot;')}" />
+      <label>Description</label>
+      <textarea id="imp-desc" style="width:100%;height:120px;padding:8px">${desc.replace(/"/g,'&quot;')}</textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="imp-cancel">Cancel</button>
+        <button id="imp-save">Save as New Recipe</button>
+      </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    document.getElementById('imp-cancel').onclick = () => { document.body.removeChild(overlay); };
+    document.getElementById('imp-save').onclick = () => {
+      const newTitle = document.getElementById('imp-title').value.trim() || title;
+      const newDesc = document.getElementById('imp-desc').value.trim();
+      // Append to RECIPES as a new simple recipe (minimal fields) without breaking structure
+      const newId = RECIPES.length + 1;
+      RECIPES.push({
+        id: newId,
+        emoji: '🍽️',
+        title: newTitle,
+        cat: 'Imported',
+        serves: 'N/A',
+        prep: 'N/A',
+        cook: 'N/A',
+        desc: newDesc,
+        ingredients: [],
+        directions: [],
+        tips: [],
+        serve: [],
+        cal: 0, protein: '0g', fat: '0g', carbs: '0g'
+      });
+      alert('Imported recipe added to the end of the book. Use the Table of Contents to find it.');
+      document.body.removeChild(overlay);
+      buildToc();
+    };
+  } catch (err) {
+    console.error('DOCX import error:', err);
+    alert('Failed to import DOCX.');
+  };
+});
+
 </script>
 </body>
 </html>
