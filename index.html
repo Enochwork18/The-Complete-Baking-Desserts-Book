@@ -818,6 +818,10 @@ async function setImageWithCandidates(imgEl, recipeId, title){
     if(!candidates.includes(s)) candidates.push(s);
   }
   candidates.push('images/placeholder.svg');
+  // Ensure imgEl has an initial src to avoid blank rendering in some browsers
+  if(!imgEl.src || imgEl.src.trim()===''){
+    imgEl.src = imgEl.dataset.initialSrc || 'images/placeholder.svg';
+  }
 
   let idx = 0;
   async function tryNext(){
